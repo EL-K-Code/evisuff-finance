@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evisuff-finance"
+version = "0.1.0"
+description = "Counterfactual evidence-sufficiency evaluation for long-document financial agents"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+analysis = ["numpy>=1.26", "pandas>=2.2", "scipy>=1.12", "statsmodels>=0.14"]
+
+[project.scripts]
+evisuff = "evisuff.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+

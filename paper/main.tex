@@ -1,0 +1,390 @@
+\documentclass{article}
+
+% V0.1 uses a preprint layout. Do not change this to a conference track until
+% the submission venue and author list have been confirmed.
+\usepackage[preprint]{neurips_2026}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{courier}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\newcommand{\benchmark}{\textsc{EviSuff-Finance}}
+\newcommand{\mses}{\textsc{MSES}}
+\newcommand{\pbs}{\textsc{PBS}}
+\newcommand{\upr}{\textsc{UPR}}
+\newcommand{\cas}{\textsc{CAS}}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue}
+
+\title{When Relevant Evidence Is Not Enough: Counterfactual Evidence-Sufficiency Evaluation for Long-Document Financial Agents}
+
+% Replace only after authorship and affiliations are jointly confirmed.
+\author{Anonymous Author(s)\\
+Affiliation to be confirmed\\
+\texttt{contact to be confirmed}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Long-document financial agents are increasingly evaluated by answer accuracy,
+retrieval scores, or document-level citations. These signals do not establish
+whether an agent changes its behavior when the evidence required for an answer
+is absent. We introduce \benchmark{}, a counterfactual evaluation protocol for
+financial filings. Each question is annotated with one or more minimal
+sufficient evidence sets (\mses{}). A paired intervention removes a smallest
+hitting set that intersects every \mses{}, making the question unanswerable
+from the allowed corpus while preserving most topical context. Agents should
+answer under sufficient evidence, abstain after necessary-evidence removal, and
+remain stable under an irrelevant-removal control. This V0.1 paper contributes
+(i) the task definition and annotation protocol, (ii) an open implementation
+of the intervention and paired metrics, and (iii) a reproducible audit of the
+public IPO Finance Agent repository. The audit confirms a useful 70-question
+IPO seed set but also shows why claim-to-passage human provenance is necessary
+for the proposed evaluation. We report no model-comparison results: the
+human-validated benchmark and preregistered experiment remain future work.
+\end{abstract}
+
+\section{Introduction}
+
+Financial agents increasingly operate over lengthy regulatory filings,
+combining tables, footnotes, risk disclosures, accounting recasts, and
+governance information. Correctness alone is not enough in this setting: a
+response can look plausible, cite a whole filing, and still be unsupported by
+the evidence made available to the model. The distinction matters for research
+agents, due diligence assistants, and systems used to support high-stakes
+professional workflows.
+
+Recent benchmarks document important limitations of financial retrieval and
+reasoning. IPO Finance Agent extends financial-agent evaluation to IPO
+diligence and long S-1 filings \citep{benhenda2026ipo}. Fin-RATE separates
+ground-truth-context and retrieval-augmented settings over SEC tasks
+\citep{jiang2026finrate}; LOFin/HiREC studies evidence curation over large SEC
+corpora \citep{choe2025hirec}; and FinAgentBench assesses agentic document and
+passage selection \citep{choi2025finagentbench}. In general RAG, sufficient
+context \citep{joren2024sufficient}, answerable/unanswerable search
+\citep{xie2026oversearch}, citation evaluation \citep{gao2023alce}, and
+conflicting evidence \citep{lee2025magic,niu2026arbgraph} have each received
+direct attention. Deep-research benchmarks further expose difficulties in
+evidence-backed multi-step synthesis \citep{sharma2025researchrubrics,gou2025mind2web}.
+
+These works leave a precise diagnostic question open: \emph{does a financial
+agent causally track the evidence necessary for its answer?} An answerable
+context can contain relevant passages without being sufficient, while removing
+one passage from a multi-source answer may leave an alternative complete proof
+path intact. We therefore require annotators to enumerate multiple minimal
+sufficient evidence sets and construct a removal that breaks all known paths.
+
+This paper is deliberately modest. It is a V0.1 protocol and reproducibility
+audit, not a completed empirical benchmark. Its contributions are:
+
+\begin{enumerate}[leftmargin=1.3em]
+    \item a formal paired intervention for evidence sufficiency based on
+    human-verified \mses{} and minimum hitting sets;
+    \item an annotation, evaluation, and statistical protocol for long-document
+    financial agents;
+    \item a tested open-source implementation of the core intervention and
+    metrics; and
+    \item a scoped, reproducible audit of public IPO Finance Agent artifacts to
+    motivate the need for claim-level evidence provenance.
+\end{enumerate}
+
+\section{Related work}
+
+\paragraph{Financial documents and agents.}
+IPO Finance Agent introduces a public set of 70 SpaceX IPO questions and a
+contextual-retrieval harness designed for long S-1 documents
+\citep{benhenda2026ipo}. Fin-RATE evaluates financial analytics across single
+documents, longitudinal data, and cross-entity comparisons
+\citep{jiang2026finrate}. LOFin/HiREC focuses on hierarchical retrieval and
+evidence curation for standardized SEC documents \citep{choe2025hirec}, while
+FinSage and FinAgentBench target financial filing QA and agentic retrieval
+\citep{wang2025finsage,choi2025finagentbench}. \benchmark{} uses such tasks as
+a domain but does not propose a competing retrieval method.
+
+\paragraph{Sufficiency, abstention, and citations.}
+Sufficient Context distinguishes errors caused by insufficient retrieval from
+those caused by failures to use adequate evidence \citep{joren2024sufficient}.
+Over-Searching shows that noisy search can harm abstention on unanswerable
+queries \citep{xie2026oversearch}, and ERA studies evidence-based reliability
+alignment for abstention \citep{shin2026era}. ALCE formalizes citation
+correctness and completeness \citep{gao2023alce}; more recent work evaluates
+source attribution in deep-research reports \citep{onweller2026cited}. Our
+focus differs: we assess whether answer and abstention behavior changes after
+a controlled removal of necessary evidence.
+
+\paragraph{Conflicts, time, and research agents.}
+MAGIC and ArbGraph address contradictory or conflicting retrieved evidence
+\citep{lee2025magic,niu2026arbgraph}. Look-Ahead-Bench studies temporal
+look-ahead bias in financial LLMs \citep{benhenda2026lookahead}. ResearchRubrics
+and Mind2Web~2 evaluate long-horizon research agents and their evidence-backed
+outputs \citep{sharma2025researchrubrics,gou2025mind2web}. Contradiction and
+temporal interventions are important extensions, but \benchmark{} first isolates
+the simpler causal question of whether evidence is sufficient at all.
+
+\section{Task definition}
+
+For a question $q$, let $D$ be a fixed corpus of filings and let $E$ be its
+set of stable evidence units. A unit is a retrievable passage or table region
+with a document ID, section, text, source URL, and optional publication date.
+Let $\mathcal{M}_q = \{M_1, \ldots, M_k\}$ be human-validated minimal
+sufficient evidence sets. An available context $C \subseteq E$ is answerable
+when at least one complete set remains:
+
+\begin{equation}
+    \operatorname{answerable}(q,C)=1\quad \Longleftrightarrow\quad
+    \exists M_i \in \mathcal{M}_q \text{ such that } M_i \subseteq C.
+\end{equation}
+
+The necessary-removal intervention selects a minimum hitting set:
+
+\begin{equation}
+H^* \in \arg\min_{H \subseteq \cup_i M_i} |H|
+\quad \text{s.t.} \quad H \cap M_i \neq \varnothing\;\; \forall i.
+\end{equation}
+
+The context $C^- = C \setminus H^*$ contains no known complete \mses{} and is
+labeled unanswerable with respect to the allowed corpus. This definition is
+stronger than deleting a random supporting passage: an alternative evidence
+path cannot silently survive the intervention.
+
+Each item produces four paired conditions:
+
+\begin{enumerate}[leftmargin=1.3em]
+    \item \texttt{full}: retrieved or curated context with sufficient evidence;
+    \item \texttt{gold\_only}: a single complete \mses{} without distractors;
+    \item \texttt{necessary\_removal}: the hitting set is removed; and
+    \item \texttt{irrelevant\_removal}: an irrelevant distractor is removed.
+\end{enumerate}
+
+The prompt requires a structured response with an answerability decision,
+probability of answerability, answer, atomic claims, passage IDs cited for each
+claim, and a missing-information explanation when abstaining. The model is not
+told which condition generated the context.
+
+\section{Benchmark construction protocol}
+
+The planned full benchmark contains 60 questions (minimum 40) drawn from at
+least three, preferably five, S-1/F-1 filings. Every source is frozen by SEC
+accession number, filing date, URL, hash, and extraction version. The initial
+question pool can include public IPO Finance Agent items, but the test set must
+not be dominated by one issuer: SpaceX should contribute fewer than 40\% of
+the final items.
+
+Each record specifies a reference answer decomposed into atomic claims,
+evidence units with stable passage identifiers, one or more \mses{},
+distractors, an answerability label, cutoff-date metadata, and annotator and
+adjudication information. At least 25\% of the full set is double annotated;
+the 20--30-item minimum viable benchmark is double annotated in full. We will
+report Cohen's $\kappa$ for answerability and evidence-unit precision, recall,
+and F1 for spans and sets. A two-person review verifies every
+\texttt{necessary\_removal} context.
+
+Disclosure-of-absence questions require special care. ``The filing does not
+disclose X'' cannot be supported by one missing string. Annotators must fix a
+bounded search scope, list relevant sections and synonyms, and document the
+verification procedure. These items will be analyzed separately from
+affirmative-evidence questions.
+
+\section{Evaluation}
+
+\paragraph{Primary paired metrics.}
+For $N$ question-level pairs, paired behavior success measures whether a model
+answers correctly in the full context and abstains after necessary removal:
+
+\begin{equation}
+\pbs=\frac{1}{N}\sum_{j=1}^{N}\mathbb{1}[\mathrm{correct}_{j,\mathrm{full}}
+\wedge \neg\mathrm{abstain}_{j,\mathrm{full}}
+\wedge \mathrm{abstain}_{j,\mathrm{remove}}].
+\end{equation}
+
+Unsupported persistence rate is the fraction of necessary-removal cases in
+which the model still answers:
+
+\begin{equation}
+\upr=\frac{1}{N}\sum_{j=1}^{N}\mathbb{1}[\neg\mathrm{abstain}_{j,\mathrm{remove}}].
+\end{equation}
+
+Counterfactual abstention shift is
+$\cas=P(\mathrm{abstain}\mid\mathrm{necessary\ removal})-
+P(\mathrm{abstain}\mid\mathrm{full})$. A system that tracks necessity should
+have high \pbs{}, low \upr{}, positive \cas{}, and high stability under
+\texttt{irrelevant\_removal}.
+
+\paragraph{Secondary metrics.}
+Retrieval is evaluated with Recall@k, nDCG@k, and \emph{Complete Evidence
+Recall}: whether at least one entire \mses{} was retrieved. This avoids
+over-crediting a retriever that retrieves individual relevant passages but
+misses a necessary multi-passage chain. Generation evaluation includes atomic
+claim precision/recall, citation precision, citation completeness, selective
+accuracy, risk--coverage curves, Brier score for answerability probability,
+latency, tokens, tool calls, and cost.
+
+\paragraph{Statistical analysis.}
+We will bootstrap at the question level to preserve paired conditions, report
+95\% confidence intervals, use McNemar tests for matched behavior changes, and
+fit mixed-effects logistic models with model and question/filing effects where
+appropriate. Holm correction applies to secondary families of hypotheses.
+LLM judging is auxiliary until calibrated against at least 150
+human-labeled claim--citation pairs, with judge--human agreement and an error
+analysis reported.
+
+\section{Implementation and planned baselines}
+
+The accompanying package validates JSONL annotations, computes a minimum
+hitting set, materializes all four conditions, calculates paired metrics, and
+provides a question-level bootstrap. Unit tests cover multiple evidence paths,
+condition construction, retrieval completeness, invalid inputs, and paired
+metrics. A fictional fixture is included solely to test software behavior.
+
+The planned retrieval controls are BM25, dense BGE-M3, reciprocal-rank-fusion
+hybrid retrieval, contextual hybrid retrieval with reranking, and a gold
+evidence oracle. Retrieval parameters (512/1,024-token chunks, 128-token
+overlap, $k\in\{5,10,20\}$) are tuned on development data and then frozen.
+The generation matrix will include models from at least three frontier
+providers and one open-weight 8B--14B baseline, with temperature zero and
+three repetitions. The full study has $60 \times 4 \times 5 \times 3 = 3{,}600$
+generations before optional ablations.
+
+The scientific contribution is not that one retriever dominates another.
+Retrievers are controlled factors needed to separate an evidence-retrieval
+failure from a failure to use evidence supplied to the model. The
+\texttt{gold\_only} condition is the key oracle for this decomposition.
+
+\section{Preliminary reproducibility audit}
+
+We audited public artifacts from IPO Finance Agent at commit
+\texttt{091f069}; the full revision is recorded in the released audit JSON.
+This audit is descriptive:
+it neither independently validates the benchmark's rubrics nor estimates model
+accuracy. It establishes what can and cannot be treated as a gold-evidence
+source when constructing \benchmark{}.
+
+\begin{table}[t]
+\caption{Public IPO Finance Agent question taxonomy at the audited commit. The
+70-item public set is a useful seed pool, but its single-issuer concentration
+motivates multi-filing construction for \benchmark{}.}
+\label{tab:taxonomy}
+\centering
+\begin{tabular}{lr}
+\toprule
+Original category & Questions \\
+\midrule
+Quantitative & 28 \\
+Disclosure & 21 \\
+Forensic & 8 \\
+Comparative & 6 \\
+Governance & 4 \\
+Modeling & 3 \\
+\midrule
+Total & 70 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The public repository includes two automatically checked rubric artifacts
+(Table~\ref{tab:rubrics}). The later pass reports higher mean overall quality,
+but also contains 23 \texttt{stop} and 43 \texttt{repair} recommendations. No
+record exposes a top-level evidence-identifier field. These upstream fields
+must not be interpreted as human-validation error rates; they motivate a
+separate, stable, claim-to-passage annotation layer.
+
+\begin{table}[t]
+\caption{Descriptive audit of upstream automatic rubric artifacts. Recommendation
+labels and quality scores are reported exactly as stored upstream; they are not
+independent human labels.}
+\label{tab:rubrics}
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Artifact & Records & Mean quality & Recommendations \\
+\midrule
+Checked & 70 & 0.763 & 44 repair / 21 enrich / 5 stop \\
+Seventh pass & 70 & 0.896 & 43 repair / 4 enrich / 23 stop \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+One public Qwen result artifact contains 70 successful outputs. Sixty-eight
+contain at least one URL (median one URL; maximum ten), but none contains a
+Markdown inline citation or a stable evidence/chunk/passage ID token. This is a
+format-level observation about one artifact, not a claim about factual
+correctness, all models, or IPO Finance Agent as a whole. It does show why a
+document-level URL cannot by itself establish citation completeness for an
+atomic claim.
+
+Finally, eight unit tests pass and the fictional fixture validates without schema
+errors. Its smoke test distinguishes an intentionally evidence-sensitive policy
+from an intentionally relevance-only policy. Those values are software
+verification only; they are not included as benchmark results and must not be
+used to support an empirical claim.
+
+\section{Discussion and limitations}
+
+The core risk is the validity of the human evidence sets. Minimality is
+judgment-dependent, SEC filings can contain redundant disclosures, and
+parametric model knowledge may permit a correct answer even after a controlled
+removal. We mitigate rather than eliminate these risks through multiple MSES
+paths, closed-book controls, frozen corpora, independent verification, and an
+explicitly bounded claim: behavior is evaluated relative to the allowed corpus.
+
+The financial domain is valuable because filings are long, consequential, and
+traceable, but it limits generalization. The intervention protocol should later
+be tested on legal, biomedical, and technical standards documents. Temporal
+invalidity and contradictions are also important in finance; they are left as
+post-core extensions rather than being folded into the first study.
+
+This V0.1 is not ready for a NeurIPS submission. It has no completed
+human-validated dataset and no real-model results. Its purpose is to make the
+future experiment falsifiable, auditable, and difficult to overclaim. The
+necessary next milestone is a double-annotated 20-item pilot meeting the
+pre-specified quality gates.
+
+\section{Conclusion}
+
+\benchmark{} asks a narrower question than generic financial-agent quality:
+does the agent change from supported answering to abstention when all known
+necessary evidence paths are broken? The proposed paired design distinguishes
+relevance from sufficiency, retrieval from evidence use, and citation presence
+from claim-level support. The released V0.1 implementation and audit provide a
+reproducible foundation; empirical conclusions await the planned human
+annotation and model study.
+
+\section*{Research transparency statement}
+
+The implementation, fictional fixture, protocol, and reproducible upstream
+audit are public. No private filing data, API keys, held-out questions, or
+model results are included. The author list, venue, final dataset, and model
+access details remain to be confirmed. A complete official checklist must be
+generated for the final selected NeurIPS or workshop track.
+
+{\small
+\bibliographystyle{plainnat}
+\bibliography{references}
+}
+
+\appendix
+\section{Annotation record requirements}
+
+Each record contains a question, a bounded allowed corpus, a reference answer,
+atomic claims, evidence units, all known \mses{} paths, distractors,
+answerability, temporal metadata, and adjudication metadata. The JSONL schema
+and validation command are released with the code. Questions with unresolved
+alternative evidence paths are excluded rather than forced into a
+necessary-removal intervention.
+
+\section{Reproducibility checklist for the future empirical study}
+
+The final empirical release will provide filing hashes, data and prompt
+versions, retrieval configuration, exact model IDs and access dates, run IDs,
+costs, evaluator calibration, scripts for bootstrap intervals and tests, and
+an error-analysis sample. This appendix is a planning commitment, not evidence
+that the future experiment has already been performed.
+
+\end{document}

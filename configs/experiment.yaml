@@ -1,0 +1,59 @@
+study:
+  name: evisuff_finance
+  primary_question: >-
+    Do long-document financial agents appropriately change from supported
+    answering to abstention when necessary evidence is removed?
+  preregister_primary_metric: paired_behavior_success
+
+dataset:
+  target_questions: 60
+  minimum_questions: 40
+  minimum_filings: 3
+  filing_types: [S-1, F-1]
+  double_annotation_fraction: 0.25
+  freeze_before_model_runs: true
+  conditions:
+    - full
+    - gold_only
+    - necessary_removal
+    - irrelevant_removal
+  optional_conditions_after_go_no_go:
+    - topical_distractor_injection
+    - contradiction_injection
+
+retrieval:
+  chunk_tokens: [512, 1024]
+  overlap_tokens: 128
+  top_k: [5, 10, 20]
+  systems:
+    - bm25
+    - dense_bge_m3
+    - hybrid_rrf
+    - contextual_hybrid_reranked
+    - oracle_gold
+
+models:
+  required_roles:
+    - frontier_model_provider_a
+    - frontier_model_provider_b
+    - open_weight_8b_to_14b
+  temperature: 0
+  repeated_runs: 3
+  max_output_tokens: 1800
+
+evaluation:
+  primary_metrics:
+    - paired_behavior_success
+    - unsupported_persistence_rate
+    - counterfactual_abstention_shift
+  secondary_metrics:
+    - complete_evidence_recall
+    - citation_precision
+    - citation_completeness
+    - selective_accuracy
+    - brier_answerability
+    - irrelevant_removal_stability
+  confidence_intervals: paired_cluster_bootstrap_95
+  multiple_testing: holm
+  judge_policy: calibrate_against_human_labels
+

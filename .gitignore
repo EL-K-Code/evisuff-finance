@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Build and packaging
+build/
+dist/
+*.egg-info/
+
+# Editor and operating system artifacts
+.DS_Store
+.idea/
+.vscode/
+
+# LaTeX intermediates
+paper/build/
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.synctex.gz
+paper/main.pdf
+
+# Do not commit credentials, downloaded filings, or private annotations.
+.env
+.env.*
+!sample.env
+data/raw/
+data/private/
+results/private/

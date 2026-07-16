@@ -1,0 +1,74 @@
+{
+  "answer_provenance_example": {
+    "answers": 70,
+    "answers_with_markdown_inline_citation": 0,
+    "answers_with_stable_evidence_id_token": 0,
+    "answers_with_url": 68,
+    "artifact": "results/qwen3.7-max-public-spacex-70-20260609-134629.json",
+    "max_urls_per_answer": 10,
+    "median_urls_per_answer": 1.0,
+    "scope_warning": "This is one public model result artifact and measures output format, not factual correctness or the entire benchmark.",
+    "successful": 70
+  },
+  "interpretation_warning": "Automated quality flags are repository artifacts, not independent human validation and not a direct estimate of grading error.",
+  "result_type": "reproducible_public_repository_audit",
+  "rubric_versions": {
+    "rubric/rubrics_checked.json": {
+      "listed_issues": 235,
+      "quality_below_0_8": 37,
+      "quality_mean": 0.7634642857142857,
+      "quality_median": 0.775,
+      "quality_min": 0.325,
+      "recommendations": {
+        "enrich": 21,
+        "repair": 44,
+        "stop": 5
+      },
+      "records": 70,
+      "records_with_top_level_evidence_key": 0
+    },
+    "rubric/rubrics_checked_7thpass.json": {
+      "listed_issues": 149,
+      "quality_below_0_8": 8,
+      "quality_mean": 0.8958928571428572,
+      "quality_median": 0.925,
+      "quality_min": 0.425,
+      "recommendations": {
+        "enrich": 4,
+        "repair": 43,
+        "stop": 23
+      },
+      "records": 70,
+      "records_with_top_level_evidence_key": 0
+    }
+  },
+  "taxonomy": {
+    "categories": {
+      "comparative": 6,
+      "disclosure": 21,
+      "forensic": 8,
+      "governance": 4,
+      "modeling": 3,
+      "quantitative": 28
+    },
+    "domains": {
+      "Accounting and common-control recast mechanics": 10,
+      "Capital intensity and funding": 12,
+      "Execution and program risk": 8,
+      "Governance and control structures": 4,
+      "KPI quality and monetization": 12,
+      "Segment economics and operating performance": 10,
+      "Valuation and underwriting analysis": 14
+    },
+    "questions": 70,
+    "workflows": {
+      "Accounting and transaction advisory": 16,
+      "Credit analysis": 12,
+      "Investment banking / ECM": 5,
+      "Public-market investing": 19,
+      "Securities counsel": 6,
+      "Venture and growth investing": 12
+    }
+  },
+  "upstream_commit": "091f06913e39738ef464ac3548ad4b533ac47c50"
+}
