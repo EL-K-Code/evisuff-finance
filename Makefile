@@ -1,4 +1,4 @@
-.PHONY: test validate smoke audit paper clean-paper workflow-test workflow-pilot
+.PHONY: test validate smoke audit paper clean-paper workflow-test workflow-pilot experiment-test empirical-dry-run
 
 test:
 	PYTHONPATH=src python -m unittest discover -s tests -v
@@ -23,3 +23,9 @@ workflow-test:
 
 workflow-pilot:
 	PYTHONPATH=src python -m evisuff.workflow_cli synthetic-pilot data/ipo_workflow_pilot/spec.json --runs-dir results/ipo_pilot_runs --output results/ipo_workflow_pilot.json
+
+experiment-test:
+	PYTHONPATH=src python -m unittest discover -s tests -p 'test_experiment_runner.py' -v
+
+empirical-dry-run:
+	PYTHONPATH=src python -m evisuff.experiment_cli run configs/ipo_empirical_dry_run.json --overwrite
