@@ -1,134 +1,128 @@
-# Empirical Phase: Frontier Models in an IPO Enterprise Workflow
+# Empirical phase: frontier-model composition study
 
-## Objective
+## Research question
 
-The empirical phase tests whether finance capabilities measured in isolation remain predictive when they must compose into one persistent IPO workflow.
+Do finance-agent capabilities measured in isolated tasks remain predictive when those capabilities must be composed through a version-sensitive IPO workflow?
 
-The same model or system is evaluated under three conditions:
+## Frozen case pack
 
-1. **isolated** — each department works independently with no upstream artifacts;
-2. **generalist** — one agent produces all four artifacts in one call;
-3. **multi_agent** — specialized departmental calls pass structured handoffs downstream.
+The first empirical pack is indexed by `data/ipo_real_cases/index.json` and contains Reddit 2024, Rubrik 2024, and CoreWeave 2025. Each case includes:
 
-The four departments are due diligence, valuation, risk, and the ECM committee.
+- at least two chronologically ordered evidence packets;
+- official SEC EDGAR document URLs and accessions;
+- a public `source_packet` shown to systems;
+- private gold facts and risks used only by verifiers;
+- a required latest source version;
+- a single shared valuation scenario.
 
-## Primary hypotheses
+The current annotation status requires an independent second review before paper-grade real-model runs. See `docs/real_ipo_cases.md` and `docs/annotation_review_checklist.md`.
 
-- **H1 — composition gap:** component scores will exceed workflow scores for at least some systems.
-- **H2 — rank instability:** rankings on isolated tasks may not survive the transition to the full workflow.
-- **H3 — coordination sensitivity:** multi-agent specialization may improve local quality while increasing handoff failures.
-- **H4 — freshness:** filing amendments will expose stale-version errors that isolated task scores miss.
+## Experimental conditions
 
-## Runner outputs
+### Isolated
 
-Every run creates a dedicated directory containing:
+Each department receives the source packet but no upstream artifact. This approximates evaluating due diligence, valuation, risk analysis, and memo production as separate benchmark tasks.
 
-- `diligence.json`;
-- `valuation.json`;
-- `risk.json`;
-- `memo.json`;
-- `run_metadata.json`;
-- `trajectory.jsonl`;
-- `score.json`.
+### Generalist
 
-The metadata records the system, condition, repetition, timing, token usage, estimated cost, response hashes, and the hash of the case specification.
+One model call produces all four artifacts and is instructed to reconcile them before returning.
 
-## Offline validation
+### Multi-agent
 
-Run the deterministic controls before any paid model experiment:
+Four sequential specialist calls are used. Due diligence hands facts to valuation and risk; all upstream artifacts are handed to the ECM memo agent.
 
-```bash
-make experiment-test
-make empirical-dry-run
-```
+## Required systems
 
-The oracle control must pass all three conditions. The stale-silo control must complete locally but fail enterprise success because departments use inconsistent filing versions.
+Freeze exact provider and model identifiers before execution. The initial comparison should include at least:
 
-These controls are software-validation results, not model results.
+- two models from Chinese frontier labs when accessible;
+- one strong Western frontier model;
+- one additional cost-efficient or open-weight baseline.
 
-## Configure frontier models
+Never use moving aliases such as `latest` when a dated or immutable identifier is available. Save the complete run config and case-pack commit SHA with the results.
 
-Copy the example configuration:
+## Repetitions
 
-```bash
-cp configs/ipo_empirical.example.json configs/ipo_empirical.local.json
-```
+Use at least three repetitions per `case × system × condition`. Increase repetitions when outputs remain highly variable or when rank conclusions depend on small score differences.
 
-For each system:
+## Backend contract
 
-1. set `enabled` to `true`;
-2. replace `MODEL_NAME_HERE` with the exact frozen model identifier;
-3. set the provider base URL and API key environment variables;
-4. enter the documented token prices used on the experiment date;
-5. preserve temperature, prompt, cases, and repetitions across systems.
+### Hosted models
 
-Example environment variables:
+The dependency-free OpenAI-compatible backend sends only:
 
-```bash
-export QWEN_API_BASE='https://provider.example/v1'
-export QWEN_API_KEY='...'
-export KIMI_API_BASE='https://provider.example/v1'
-export KIMI_API_KEY='...'
-```
+- system prompt;
+- task prompt containing `source_packet`;
+- frozen generation parameters.
 
-Then run:
+API keys and base URLs come from environment variables. They must never be committed.
 
-```bash
-PYTHONPATH=src python -m evisuff.experiment_cli run \
-  configs/ipo_empirical.local.json
-```
+### Local command agents
 
-Use `--overwrite` only when intentionally replacing an existing run. By default, completed runs are resumed from disk.
+The command backend sends JSON over stdin and expects a JSON envelope over stdout. Private `spec` metadata is stripped before invocation so local systems cannot access gold facts or risk labels.
 
-## Backends
+## Outputs preserved per run
 
-### OpenAI-compatible API
+- four department artifacts;
+- raw response summaries;
+- call trajectory;
+- response hashes;
+- token usage;
+- estimated cost;
+- latency;
+- verifier report;
+- failures and exception text.
 
-Use `type: openai_compatible` for providers exposing a chat-completions-compatible endpoint. The runner supports JSON mode, retries on rate limits/server failures, custom headers, and provider-specific extra request fields.
+Completed runs are resumable unless `--overwrite` is used.
 
-### Local command or custom harness
-
-Use `type: command` to evaluate a local agent, open-weight model, or richer browser/tool harness. The command receives one JSON request on standard input and must emit a JSON envelope on standard output:
-
-```json
-{
-  "parsed": {"...": "department artifact or generalist bundle"},
-  "input_tokens": 0,
-  "output_tokens": 0
-}
-```
-
-This keeps the benchmark independent of a specific model SDK.
-
-## Case expansion
-
-The current CI fixture is synthetic. The research experiment should add at least three public IPO families with:
-
-- an initial S-1 or F-1;
-- at least one amendment;
-- stable document/version identifiers;
-- verified offer, capitalization, and risk facts;
-- source packets containing the evidence shown to the model;
-- a frozen gold specification reviewed before model execution.
-
-Cases must be split by issuer. Do not tune prompts or scoring rules after seeing held-out model outputs.
-
-## Analysis plan
-
-Report, per system and condition:
+## Primary metrics
 
 - component score;
 - coordination score;
 - workflow score;
 - composition gap;
 - enterprise-success rate;
-- stale-version and handoff failures;
-- input/output tokens;
-- estimated cost;
-- latency.
+- completion rate;
+- stale-version failure rate;
+- token use, estimated cost, and latency.
 
-The central analysis compares rank order across isolated, generalist, and multi-agent conditions. Any leaderboard claim requires multiple cases and repetitions, uncertainty intervals, and inspection of failed artifacts.
+## Core comparisons
+
+1. Within each system, compare isolated, generalist, and multi-agent conditions.
+2. Compare model rankings across conditions.
+3. Measure whether locally strong systems develop larger or smaller composition gaps.
+4. Attribute failures to stale versions, numerical handoffs, missing risk propagation, provenance, malformed artifacts, or execution failure.
+5. Report cost per successful enterprise workflow, not only cost per call.
 
 ## Claim boundary
 
-The runner enables frontier-model experiments but does not itself establish that any model or laboratory is better. Do not report deterministic controls as model results. Outputs from external models require verifier review and, for ambiguous qualitative criteria, human validation.
+Deterministic controls validate software and verifier behavior; they are not model results. Real-model aggregate scores are not paper-ready until:
+
+- case annotations are independently reviewed and adjudicated;
+- exact model identifiers and prompts are frozen;
+- repeated runs are complete;
+- failed traces are manually inspected;
+- verifier decisions are spot-checked;
+- uncertainty or paired bootstrap intervals are reported;
+- rank conclusions are tested for sensitivity to scoring weights.
+
+## Commands
+
+```bash
+make real-case-validate
+make empirical-dry-run
+cp configs/ipo_empirical.example.json configs/ipo_empirical.local.json
+PYTHONPATH=src python -m evisuff.experiment_cli run configs/ipo_empirical.local.json
+```
+
+## Minimum paper-grade table
+
+For each system and condition, report:
+
+- number of attempted and completed workflows;
+- component, coordination, and workflow scores;
+- enterprise-success rate;
+- composition gap;
+- stale-version and handoff failure rates;
+- total and per-success tokens, cost, and latency;
+- confidence intervals across paired cases and repetitions.
