@@ -1,7 +1,9 @@
 {
   "experiment_id": "ipo-workflow-frontier-models-v1",
   "cases": [
-    "../data/ipo_workflow_pilot/spec.json"
+    "../data/ipo_real_cases/reddit_2024/spec.json",
+    "../data/ipo_real_cases/rubrik_2024/spec.json",
+    "../data/ipo_real_cases/coreweave_2025/spec.json"
   ],
   "conditions": [
     "isolated",
