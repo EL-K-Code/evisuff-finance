@@ -22,3 +22,7 @@ jobs:
         run: PYTHONPATH=src python -m evisuff.cli validate data/example_annotations.jsonl
       - name: Run deterministic smoke test
         run: PYTHONPATH=src python -m evisuff.cli smoke --output results/smoke_metrics.json
+      - name: Run IPO workflow pilot
+        run: make workflow-pilot
+      - name: Verify committed pilot result
+        run: git diff --exit-code -- results/ipo_workflow_pilot.json
