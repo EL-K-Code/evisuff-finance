@@ -1,0 +1,168 @@
+{
+  "workflow_id": "coreweave-ipo-repricing-2025-v1",
+  "issuer": "CoreWeave, Inc.",
+  "ticker": "CRWV",
+  "cik": "0001769628",
+  "required_source_version": "v2",
+  "required_scenario_id": "base_case",
+  "allowed_scenarios": [
+    "base_case"
+  ],
+  "departments": [
+    "due_diligence",
+    "valuation",
+    "risk",
+    "ecm_committee"
+  ],
+  "annotation_status": "single_researcher_verified_against_official_sec_sources_second_review_pending",
+  "source_packet": {
+    "packet_type": "official_sec_evidence_packet",
+    "issuer": "CoreWeave, Inc.",
+    "required_facts": [
+      "price_per_share_usd",
+      "primary_shares_m",
+      "existing_shares_m",
+      "debt_usd_m",
+      "cash_usd_m"
+    ],
+    "chronology_rule": "The March 28 final prospectus supersedes the March 20 preliminary prospectus. Reconcile the lower final price, reduced primary share count, and changed post-offering share count.",
+    "versions": [
+      {
+        "version_id": "v1",
+        "document_id": "COREWEAVE-PRELIM-PACKET-20250320",
+        "as_of": "2025-03-20",
+        "documents": [
+          {
+            "form_type": "S-1/A",
+            "accession": "0001193125-25-058309",
+            "url": "https://www.sec.gov/Archives/edgar/data/1769628/000119312525058309/d899798ds1a.htm"
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "offer_price",
+            "text": "The preliminary midpoint price was $51.00 per share."
+          },
+          {
+            "evidence_id": "primary_shares",
+            "text": "CoreWeave planned to offer 47,178,660 primary shares."
+          },
+          {
+            "evidence_id": "existing_shares",
+            "text": "The preliminary packet implied 426,302,271 non-primary shares after including the concurrent issuance and existing classes."
+          },
+          {
+            "evidence_id": "cash",
+            "text": "Cash and cash equivalents were $1,361.083 million at December 31, 2024."
+          },
+          {
+            "evidence_id": "debt",
+            "text": "Total debt, net of discounts and issuance costs, was $7,926.340 million at December 31, 2024."
+          },
+          {
+            "evidence_id": "risk_customer",
+            "text": "A substantial portion of revenue depended on a small number of customers."
+          },
+          {
+            "evidence_id": "risk_debt",
+            "text": "CoreWeave carried substantial leverage and significant debt-service obligations."
+          },
+          {
+            "evidence_id": "risk_supplier",
+            "text": "The business depended heavily on access to advanced GPUs and a concentrated supplier ecosystem."
+          },
+          {
+            "evidence_id": "risk_control",
+            "text": "Founders retained concentrated voting control through the multi-class structure."
+          }
+        ]
+      },
+      {
+        "version_id": "v2",
+        "document_id": "COREWEAVE-FINAL-PACKET-20250328",
+        "as_of": "2025-03-28",
+        "documents": [
+          {
+            "form_type": "424B4",
+            "accession": "0001193125-25-067651",
+            "url": "https://www.sec.gov/Archives/edgar/data/1769628/000119312525067651/d899798d424b4.htm"
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "offer_price",
+            "text": "The final IPO price was $40.00 per share."
+          },
+          {
+            "evidence_id": "primary_shares",
+            "text": "CoreWeave offered 36,590,000 primary shares; selling stockholders offered another 910,000 shares."
+          },
+          {
+            "evidence_id": "existing_shares",
+            "text": "Total post-offering shares were 464,099,446, implying 427,509,446 non-primary shares for this case."
+          },
+          {
+            "evidence_id": "cash",
+            "text": "Cash and cash equivalents were $1,361.083 million at December 31, 2024."
+          },
+          {
+            "evidence_id": "debt",
+            "text": "Total debt, net of discounts and issuance costs, was $7,926.340 million at December 31, 2024."
+          },
+          {
+            "evidence_id": "risk_customer",
+            "text": "A substantial portion of revenue depended on a small number of customers."
+          },
+          {
+            "evidence_id": "risk_debt",
+            "text": "CoreWeave carried substantial leverage and significant debt-service obligations."
+          },
+          {
+            "evidence_id": "risk_supplier",
+            "text": "The business depended heavily on access to advanced GPUs and a concentrated supplier ecosystem."
+          },
+          {
+            "evidence_id": "risk_control",
+            "text": "Founders retained concentrated voting control through the multi-class structure."
+          }
+        ]
+      }
+    ]
+  },
+  "versions": {
+    "v1": {
+      "document_id": "COREWEAVE-PRELIM-PACKET-20250320",
+      "form_type": "S-1/A",
+      "facts": {
+        "price_per_share_usd": 51.0,
+        "primary_shares_m": 47.17866,
+        "existing_shares_m": 426.302271,
+        "debt_usd_m": 7926.34,
+        "cash_usd_m": 1361.083
+      },
+      "risk_flags": [
+        "customer_concentration",
+        "high_leverage",
+        "gpu_supplier_dependency",
+        "dual_class_control"
+      ]
+    },
+    "v2": {
+      "document_id": "COREWEAVE-FINAL-PACKET-20250328",
+      "form_type": "424B4",
+      "facts": {
+        "price_per_share_usd": 40.0,
+        "primary_shares_m": 36.59,
+        "existing_shares_m": 427.509446,
+        "debt_usd_m": 7926.34,
+        "cash_usd_m": 1361.083
+      },
+      "risk_flags": [
+        "customer_concentration",
+        "high_leverage",
+        "gpu_supplier_dependency",
+        "dual_class_control"
+      ]
+    }
+  }
+}
