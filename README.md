@@ -155,7 +155,30 @@ The preparer validates enabled providers and prints the planned call count befor
 
 The generated `configs/ipo_empirical.local.json` contains environment-variable names, model labels, and prices, but no secrets. It is ignored by Git.
 
-### 4. Run the models
+### 4. Run one paid smoke call
+
+Before launching the complete matrix, verify the first configured system on the first IPO with one generalist call:
+
+```bash
+make provider-smoke
+```
+
+Choose a different system, case, or condition when needed:
+
+```bash
+make provider-smoke SYSTEM_INDEX=1 CASE_INDEX=2 CONDITION=isolated
+```
+
+Windows without `make`:
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m evisuff.experiment_cli run-one configs/ipo_empirical.local.json --env-file .env --case-index 0 --system-index 0 --condition generalist --repetition 0 --output-root results/provider_smoke --overwrite
+```
+
+Inspect the generated artifacts and score before approving the full budget.
+
+### 5. Run the complete matrix
 
 ```bash
 make run-real-models
