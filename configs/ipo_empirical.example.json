@@ -18,7 +18,7 @@
       "enabled": false,
       "backend": {
         "type": "openai_compatible",
-        "model": "MODEL_NAME_HERE",
+        "model_env": "QWEN_MODEL",
         "base_url_env": "QWEN_API_BASE",
         "api_key_env": "QWEN_API_KEY",
         "temperature": 0.0,
@@ -37,7 +37,7 @@
       "enabled": false,
       "backend": {
         "type": "openai_compatible",
-        "model": "MODEL_NAME_HERE",
+        "model_env": "KIMI_MODEL",
         "base_url_env": "KIMI_API_BASE",
         "api_key_env": "KIMI_API_KEY",
         "temperature": 0.0,
@@ -45,6 +45,44 @@
         "timeout_seconds": 300,
         "max_retries": 3,
         "use_json_response_format": true
+      },
+      "pricing_usd_per_million_tokens": {
+        "input": 0.0,
+        "output": 0.0
+      }
+    },
+    {
+      "system_id": "openai-model-placeholder",
+      "enabled": false,
+      "backend": {
+        "type": "openai_compatible",
+        "model_env": "OPENAI_MODEL",
+        "base_url_env": "OPENAI_API_BASE",
+        "api_key_env": "OPENAI_API_KEY",
+        "temperature": 0.0,
+        "max_tokens": 4096,
+        "timeout_seconds": 300,
+        "max_retries": 3,
+        "use_json_response_format": true
+      },
+      "pricing_usd_per_million_tokens": {
+        "input": 0.0,
+        "output": 0.0
+      }
+    },
+    {
+      "system_id": "anthropic-model-placeholder",
+      "enabled": false,
+      "backend": {
+        "type": "anthropic",
+        "model_env": "ANTHROPIC_MODEL",
+        "base_url_env": "ANTHROPIC_API_BASE",
+        "api_key_env": "ANTHROPIC_API_KEY",
+        "temperature": 0.0,
+        "max_tokens": 4096,
+        "timeout_seconds": 300,
+        "max_retries": 3,
+        "anthropic_version": "2023-06-01"
       },
       "pricing_usd_per_million_tokens": {
         "input": 0.0,
