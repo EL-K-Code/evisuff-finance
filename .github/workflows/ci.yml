@@ -28,6 +28,8 @@ jobs:
         run: git diff --exit-code -- results/ipo_workflow_pilot.json
       - name: Validate real SEC IPO cases
         run: make real-case-validate
+      - name: Verify committed real-case validation
+        run: git diff --exit-code -- results/real_ipo_case_validation.json
       - name: Run empirical-runner tests
         run: make experiment-test
       - name: Verify command-backend privacy
