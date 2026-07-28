@@ -34,5 +34,7 @@ jobs:
         run: make experiment-test
       - name: Verify command-backend privacy
         run: make privacy-test
+      - name: Test hosted-provider adapters and secure config preparation
+        run: make provider-test
       - name: Run offline real-case matrix
         run: make empirical-dry-run
