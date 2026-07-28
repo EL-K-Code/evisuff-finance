@@ -1,106 +1,88 @@
-# EviSuff-Finance
+# EviSuff-Finance — IPO Multi-Department Workflow Pilot
 
-Research scaffold for **counterfactual evidence-sufficiency evaluation** of
-long-document financial agents.
+This repository is evolving from a single-task evidence diagnostic into a **compositional finance-agent environment**. The pilot asks a sharper question:
 
-The consolidated French research dossier is available in
-[`DOSSIER_RECHERCHE_FR.md`](DOSSIER_RECHERCHE_FR.md).
+> **Can benchmark-level finance skills compose into a coherent enterprise workflow?**
 
-The paper source and compiled V0 are in [`paper/`](paper/). It is intentionally
-a protocol-and-audit draft: it does not claim empirical model results before
-the human-verified benchmark exists.
+The first environment simulates one IPO process across four departments:
 
-The central question is not only whether an agent retrieves relevant text, but
-whether it changes its answer appropriately when evidence required for the
-answer is removed. The benchmark therefore represents each question with one
-or more **minimal sufficient evidence sets** and creates paired conditions:
+1. **Due diligence** — extract filing facts and provenance, inspired by IPO Finance Agent.
+2. **Valuation** — compute proceeds, equity value, net debt, and dilution, inspired by spreadsheet-agent benchmarks.
+3. **Risk** — identify material risks and amendments.
+4. **ECM committee** — produce a final memo consistent with every upstream artifact.
 
-- `full`: all available evidence;
-- `gold_only`: only a minimal sufficient evidence set;
-- `necessary_removal`: a smallest hitting set is removed so that every minimal
-  evidence set is broken;
-- `irrelevant_removal`: a distractor is removed as a stability control.
+The benchmark scores both local department quality and enterprise-level coordination. A system can therefore score well on every local task while failing the overall workflow because departments use different filing versions, scenarios, values, risks, or citations.
 
-## What is already implemented
+## Why this direction
 
-- JSONL annotation schema;
-- validation of minimal sufficient evidence sets;
-- deterministic construction of paired counterfactual conditions;
-- metrics for answer quality, abstention, calibration, citation quality,
-  complete-evidence retrieval, and paired evidence sensitivity;
-- paired bootstrap confidence intervals;
-- validation of provider-agnostic prediction manifests and model-wise scoring;
-- eight unit tests and a synthetic smoke test;
-- research protocol, annotation guide, literature audit, paper source/PDF, and
-  experiment config.
+Frontier agent evaluation is moving from static prompts toward stateful environments with tools, files, verifiers, traces, and multi-round workflows. The finance use case is useful because it provides verifiable numbers, provenance, cross-artifact dependencies, and high-value handoffs.
 
-## Reproduce locally
+The novelty target is **not** “another simulated bank.” The research target is the **composition gap** between isolated benchmark performance and end-to-end enterprise performance.
 
-```bash
-make test
-make validate
-make smoke
-make paper
-```
+## Pilot status
 
-The repository includes a GitHub Actions workflow that runs the public fixture
-validation and unit tests on every pull request.
+The current pilot is a deterministic software-validation fixture, not a model leaderboard. It includes:
 
-## From annotations to model metrics
+- one synthetic issuer;
+- an S-1 followed by an S-1/A amendment;
+- four departmental artifacts;
+- local component checks;
+- cross-department handoff checks;
+- freshness and provenance checks;
+- three synthetic systems that validate the scoring logic.
 
-```bash
-evisuff build-conditions annotations.jsonl --output conditions.jsonl
-evisuff score predictions.jsonl --output results/model_metrics.json
-```
+The `siloed_benchmark_winners` control is intentionally locally correct for each department's declared filing, but globally inconsistent because departments do not share the same authoritative version. This validates that the benchmark can expose a composition failure that isolated task scores miss.
 
-`build-conditions` produces the paired contexts. `score` validates a provider-
-agnostic prediction manifest and computes metrics per model. It does not judge
-whether an answer or citation is correct; apply the documented human or
-calibrated judging process first.
-
-The synthetic smoke-test scores are software-validation results, **not paper
-results**.
-
-## Quick start
+## Run the pilot
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
-PYTHONPATH=src python -m unittest discover -s tests -v
-evisuff smoke --output results/smoke_metrics.json
-evisuff validate data/example_annotations.jsonl
+make workflow-test
+make workflow-pilot
 ```
 
-## Required real-data workflow
+Or directly:
 
-1. Select 40--80 questions from IPO Finance Agent across at least 3 S-1/F-1
-   filings.
-2. Annotate atomic claims and minimal sufficient evidence sets with stable
-   passage IDs.
-3. Double-annotate at least 25% of items and adjudicate disagreements.
-4. Freeze the benchmark before running model experiments.
-5. Run the factorial experiment described in `docs/research_protocol.md`.
-6. Treat all LLM-judge outputs as auxiliary until calibrated against human
-   labels.
+```bash
+PYTHONPATH=src python -m evisuff.workflow_cli synthetic-pilot \
+  data/ipo_workflow_pilot/spec.json \
+  --runs-dir results/ipo_pilot_runs \
+  --output results/ipo_workflow_pilot.json
+```
+
+## Research metrics
+
+- **Component score**: mean quality across due diligence, valuation, risk, and memo artifacts.
+- **Coordination score**: freshness, shared scenario, numerical handoffs, risk propagation, and provenance.
+- **Workflow score**: `0.6 × component + 0.4 × coordination`.
+- **Composition gap**: component score minus workflow score.
+- **Enterprise success**: all critical local and coordination checks pass.
 
 ## Repository map
 
 ```text
-configs/experiment.yaml       experiment matrix
-data/example_annotations.jsonl
-docs/literature_audit.md      novelty audit
-docs/research_protocol.md     complete study design
-paper/outline.md              proposed paper structure
-paper/main.tex                NeurIPS-formatted V0 source
-paper/EviSuff-Finance-v0.pdf  compiled V0 (protocol and audit)
-src/evisuff/                  benchmark and metrics code
-tests/                        unit tests
-results/                      generated results only
+data/ipo_workflow_pilot/spec.json   synthetic two-version IPO fixture
+docs/ipo_workflow_pilot.md         experimental protocol and research questions
+docs/landscape_and_novelty.md      positioning against adjacent benchmarks
+src/evisuff/enterprise_workflow.py scoring and synthetic baseline generation
+src/evisuff/workflow_cli.py         workflow pilot CLI
+tests/test_enterprise_workflow.py  deterministic tests
+results/ipo_workflow_pilot.json     generated software-validation report
+paper/ipo_workflow_pilot_outline.md paper-scale study outline
 ```
 
-## Upstream project
+## Next empirical phase
 
-This work is designed as an evidence-grounded diagnostic extension of
-[IPO Finance Agent](https://github.com/benstaf/ipoagent), not as a replacement
-or a claim that its original benchmark is invalid.
+The real study will replace synthetic systems with frontier models and compare:
+
+1. isolated benchmark tasks;
+2. one generalist agent completing the workflow;
+3. a multi-agent team with departmental handoffs.
+
+The key empirical test is whether model rankings and success rates survive the transition from isolated skills to a shared enterprise workflow.
+
+## Legacy EviSuff scaffold
+
+The original counterfactual evidence-sufficiency code remains available in the repository and continues to support its existing validation, condition-building, and scoring commands. It may later contribute an evidence-ablation diagnostic inside the due-diligence department.
