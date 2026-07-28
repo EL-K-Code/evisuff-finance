@@ -1,4 +1,8 @@
-.PHONY: test validate smoke audit paper clean-paper workflow-test workflow-pilot experiment-test empirical-dry-run real-case-test real-case-validate privacy-test provider-test list-provider-models prepare-real-run run-real-models
+CASE_INDEX ?= 0
+SYSTEM_INDEX ?= 0
+CONDITION ?= generalist
+
+.PHONY: test validate smoke audit paper clean-paper workflow-test workflow-pilot experiment-test empirical-dry-run real-case-test real-case-validate privacy-test provider-test list-provider-models prepare-real-run provider-smoke run-real-models
 
 test:
 	PYTHONPATH=src python -m unittest discover -s tests -v
@@ -50,6 +54,9 @@ list-provider-models:
 
 prepare-real-run:
 	python tools/prepare_real_run.py --env .env --output configs/ipo_empirical.local.json
+
+provider-smoke:
+	PYTHONPATH=src python -m evisuff.experiment_cli run-one configs/ipo_empirical.local.json --env-file .env --case-index $(CASE_INDEX) --system-index $(SYSTEM_INDEX) --condition $(CONDITION) --repetition 0 --output-root results/provider_smoke --overwrite
 
 run-real-models:
 	PYTHONPATH=src python -m evisuff.experiment_cli run configs/ipo_empirical.local.json --env-file .env
