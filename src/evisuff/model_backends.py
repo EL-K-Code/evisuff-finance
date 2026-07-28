@@ -171,6 +171,12 @@ class CommandBackend:
         self.timeout_seconds = timeout_seconds
 
     def generate(self, request: ModelRequest) -> ModelResponse:
+        # The runner keeps the full benchmark spec in private metadata for offline
+        # deterministic controls. Never expose that spec to an evaluated command,
+        # because it contains the gold facts and risk labels.
+        safe_metadata = {
+            key: value for key, value in request.metadata.items() if key != "spec"
+        }
         payload = {
             "request_id": request.request_id,
             "workflow_id": request.workflow_id,
@@ -178,7 +184,7 @@ class CommandBackend:
             "department": request.department,
             "system_prompt": request.system_prompt,
             "user_prompt": request.user_prompt,
-            "metadata": request.metadata,
+            "metadata": safe_metadata,
         }
         started = time.perf_counter()
         completed = subprocess.run(
