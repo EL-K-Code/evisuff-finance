@@ -115,16 +115,26 @@ Copy-Item sample.env .env
 notepad .env
 ```
 
-In `.env`, enable only the selected providers, then enter:
+In `.env`, enable only the selected providers and enter their API keys and endpoints. Never send, print, or commit API keys.
 
-- the API key;
-- the exact frozen model identifier available in the account;
-- the provider endpoint;
-- the token prices applicable on the experiment date.
+### 2. Discover exact model identifiers
 
-Never send, print, or commit API keys.
+After entering a real API key and enabling a provider, run:
 
-### 2. Generate the secret-free run configuration
+```bash
+make list-provider-models
+```
+
+Windows without `make`:
+
+```powershell
+$env:PYTHONPATH = "src"
+python tools/list_provider_models.py --env .env
+```
+
+The utility performs a best-effort query of each enabled provider's model-list endpoint and never prints API keys. Model-list support varies by provider and account; when a provider does not expose it, copy the exact immutable model identifier from the official provider console. Put that identifier and the dated token prices in `.env`.
+
+### 3. Generate the secret-free run configuration
 
 ```bash
 make prepare-real-run
@@ -145,7 +155,7 @@ The preparer validates enabled providers and prints the planned call count befor
 
 The generated `configs/ipo_empirical.local.json` contains environment-variable names, model labels, and prices, but no secrets. It is ignored by Git.
 
-### 3. Run the models
+### 4. Run the models
 
 ```bash
 make run-real-models
@@ -191,6 +201,7 @@ src/evisuff/experiment_runner.py       empirical matrix orchestration
 src/evisuff/experiment_cli.py          empirical experiment CLI and env loading
 src/evisuff/real_cases.py              real-case validation and leak checks
 src/evisuff/real_cases_cli.py          real-case validation CLI
+tools/list_provider_models.py          best-effort account model discovery
 tools/prepare_real_run.py              secret-free run-config builder
 tests/                                 workflow, runner, provider, privacy, and data tests
 results/ipo_workflow_pilot.json        software-validation report
