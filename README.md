@@ -46,7 +46,8 @@ The runner executes a full experiment matrix across:
 
 It supports:
 
-- OpenAI-compatible APIs for hosted frontier models;
+- OpenAI-compatible APIs for Qwen, Kimi, OpenAI, and other providers;
+- Anthropic's native Messages API;
 - arbitrary local agents through a command-line adapter;
 - retries and failure preservation;
 - resumable runs;
@@ -71,6 +72,8 @@ The current annotation status is `single_researcher_verified_against_official_se
 
 ## Quick start
 
+### Linux or macOS
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
@@ -81,22 +84,81 @@ make workflow-pilot
 make empirical-dry-run
 ```
 
+### Windows PowerShell
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e .
+$env:PYTHONPATH = "src"
+python -m unittest discover -s tests -v
+python -m evisuff.real_cases_cli data/ipo_real_cases/index.json --output results/real_ipo_case_validation.json
+python -m evisuff.experiment_cli run configs/ipo_empirical_dry_run.json --overwrite
+```
+
 The empirical dry run uses deterministic controls on all three real IPO cases. It must never be reported as a model leaderboard.
 
-## Run frontier models
+## Prepare a real frontier-model pilot
 
-Copy the provider template:
+### 1. Create the private environment file
 
-```bash
-cp configs/ipo_empirical.example.json configs/ipo_empirical.local.json
-```
-
-Enable the selected systems, freeze their exact model identifiers, set API base URLs and keys through environment variables, then run:
+Linux or macOS:
 
 ```bash
-PYTHONPATH=src python -m evisuff.experiment_cli run \
-  configs/ipo_empirical.local.json
+cp sample.env .env
 ```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item sample.env .env
+notepad .env
+```
+
+In `.env`, enable only the selected providers, then enter:
+
+- the API key;
+- the exact frozen model identifier available in the account;
+- the provider endpoint;
+- the token prices applicable on the experiment date.
+
+Never send, print, or commit API keys.
+
+### 2. Generate the secret-free run configuration
+
+```bash
+make prepare-real-run
+```
+
+Windows without `make`:
+
+```powershell
+python tools/prepare_real_run.py --env .env --output configs/ipo_empirical.local.json
+```
+
+The preparer validates enabled providers and prints the planned call count before any paid request. With three cases and three repetitions, the full three-condition study requires **81 calls per model**:
+
+- four isolated department calls;
+- one generalist call;
+- four multi-agent calls;
+- repeated over three cases and three runs.
+
+The generated `configs/ipo_empirical.local.json` contains environment-variable names, model labels, and prices, but no secrets. It is ignored by Git.
+
+### 3. Run the models
+
+```bash
+make run-real-models
+```
+
+Windows without `make`:
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m evisuff.experiment_cli run configs/ipo_empirical.local.json --env-file .env
+```
+
+Runs are resumable. Re-running the command skips completed runs unless `--overwrite` is deliberately supplied.
 
 See [`docs/empirical_phase.md`](docs/empirical_phase.md) for the experiment protocol, backend contract, claim boundary, and case requirements.
 
@@ -112,6 +174,7 @@ See [`docs/empirical_phase.md`](docs/empirical_phase.md) for the experiment prot
 ## Repository map
 
 ```text
+sample.env                              safe provider configuration template
 configs/ipo_empirical_dry_run.json     offline controls over the real cases
 configs/ipo_empirical.example.json     hosted/local model template
 data/ipo_workflow_pilot/spec.json      synthetic two-version fixture
@@ -125,10 +188,11 @@ src/evisuff/enterprise_workflow.py     artifact and workflow scoring
 src/evisuff/workflow_cli.py            deterministic workflow pilot CLI
 src/evisuff/model_backends.py          API, command, and control backends
 src/evisuff/experiment_runner.py       empirical matrix orchestration
-src/evisuff/experiment_cli.py          empirical experiment CLI
+src/evisuff/experiment_cli.py          empirical experiment CLI and env loading
 src/evisuff/real_cases.py              real-case validation and leak checks
 src/evisuff/real_cases_cli.py          real-case validation CLI
-tests/                                 workflow, runner, privacy, and data tests
+tools/prepare_real_run.py              secret-free run-config builder
+tests/                                 workflow, runner, provider, privacy, and data tests
 results/ipo_workflow_pilot.json        software-validation report
 results/real_ipo_case_validation.json  reproducible case-pack validation
 paper/ipo_workflow_pilot_outline.md    paper-scale study outline
@@ -144,7 +208,7 @@ The study compares:
 
 The central test is whether model rankings, success rates, and cost-efficiency survive the transition from isolated skills to a shared enterprise workflow.
 
-A conference-grade result requires independent annotation review, multiple repetitions, frozen model versions, uncertainty estimates, verifier review, and inspection of natural model failures.
+A small exploratory API smoke run can verify provider compatibility before annotation review is complete. A conference-grade claim requires independent annotation review, multiple repetitions, frozen model versions, uncertainty estimates, verifier review, and inspection of natural model failures.
 
 ## Legacy EviSuff scaffold
 
