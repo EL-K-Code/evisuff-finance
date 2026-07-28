@@ -7,7 +7,6 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Protocol
 
 from .enterprise_workflow import financial_metrics
@@ -52,6 +51,44 @@ def parse_json_content(content: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("Model response must be a JSON object")
     return payload
+
+
+def _request_json(
+    *,
+    endpoint: str,
+    headers: dict[str, str],
+    body: dict[str, Any],
+    timeout_seconds: int,
+    max_retries: int,
+    retry_backoff_seconds: float,
+) -> tuple[dict[str, Any], float]:
+    request = urllib.request.Request(
+        endpoint,
+        data=json.dumps(body).encode("utf-8"),
+        headers=headers,
+        method="POST",
+    )
+    started = time.perf_counter()
+    for attempt in range(max_retries + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+                loaded = json.loads(response.read().decode("utf-8"))
+            if not isinstance(loaded, dict):
+                raise ValueError("Model API response must be a JSON object")
+            return loaded, time.perf_counter() - started
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            retryable = exc.code == 429 or exc.code >= 500
+            if not retryable or attempt >= max_retries:
+                raise RuntimeError(
+                    f"Model API returned HTTP {exc.code}: {detail}"
+                ) from exc
+            time.sleep(retry_backoff_seconds * (2**attempt))
+        except urllib.error.URLError as exc:
+            if attempt >= max_retries:
+                raise RuntimeError(f"Model API request failed: {exc}") from exc
+            time.sleep(retry_backoff_seconds * (2**attempt))
+    raise RuntimeError("Model API failed without a response")
 
 
 class OpenAICompatibleBackend:
@@ -100,44 +137,18 @@ class OpenAICompatibleBackend:
         }
         if self.use_json_response_format:
             body["response_format"] = {"type": "json_object"}
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            **self.extra_headers,
-        }
-        http_request = urllib.request.Request(
-            endpoint,
-            data=json.dumps(body).encode("utf-8"),
-            headers=headers,
-            method="POST",
+        raw, latency = _request_json(
+            endpoint=endpoint,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                **self.extra_headers,
+            },
+            body=body,
+            timeout_seconds=self.timeout_seconds,
+            max_retries=self.max_retries,
+            retry_backoff_seconds=self.retry_backoff_seconds,
         )
-        started = time.perf_counter()
-        raw: dict[str, Any] | None = None
-        for attempt in range(self.max_retries + 1):
-            try:
-                with urllib.request.urlopen(
-                    http_request, timeout=self.timeout_seconds
-                ) as response:
-                    loaded = json.loads(response.read().decode("utf-8"))
-                if not isinstance(loaded, dict):
-                    raise ValueError("Model API response must be a JSON object")
-                raw = loaded
-                break
-            except urllib.error.HTTPError as exc:
-                detail = exc.read().decode("utf-8", errors="replace")
-                retryable = exc.code == 429 or exc.code >= 500
-                if not retryable or attempt >= self.max_retries:
-                    raise RuntimeError(
-                        f"Model API returned HTTP {exc.code}: {detail}"
-                    ) from exc
-                time.sleep(self.retry_backoff_seconds * (2**attempt))
-            except urllib.error.URLError as exc:
-                if attempt >= self.max_retries:
-                    raise RuntimeError(f"Model API request failed: {exc}") from exc
-                time.sleep(self.retry_backoff_seconds * (2**attempt))
-        if raw is None:
-            raise RuntimeError("Model API failed without a response")
-        latency = time.perf_counter() - started
         choices = raw.get("choices", [])
         if not choices:
             raise ValueError("Model API response has no choices")
@@ -150,12 +161,87 @@ class OpenAICompatibleBackend:
         if not isinstance(content, str) or not content.strip():
             raise ValueError("Model API response has empty content")
         usage = raw.get("usage", {}) or {}
-        parsed = parse_json_content(content)
         return ModelResponse(
             content=content,
-            parsed=parsed,
+            parsed=parse_json_content(content),
             input_tokens=int(usage.get("prompt_tokens", 0) or 0),
             output_tokens=int(usage.get("completion_tokens", 0) or 0),
+            latency_seconds=latency,
+            raw=raw,
+        )
+
+
+class AnthropicMessagesBackend:
+    """Dependency-free backend for Anthropic's native Messages API."""
+
+    def __init__(
+        self,
+        *,
+        model: str,
+        api_key: str,
+        base_url: str = "https://api.anthropic.com/v1",
+        anthropic_version: str = "2023-06-01",
+        timeout_seconds: int = 180,
+        temperature: float = 0.0,
+        max_tokens: int = 4096,
+        max_retries: int = 3,
+        retry_backoff_seconds: float = 2.0,
+        extra_headers: dict[str, str] | None = None,
+        extra_body: dict[str, Any] | None = None,
+    ) -> None:
+        self.model = model
+        self.api_key = api_key
+        self.base_url = base_url.rstrip("/")
+        self.anthropic_version = anthropic_version
+        self.timeout_seconds = timeout_seconds
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.max_retries = max_retries
+        self.retry_backoff_seconds = retry_backoff_seconds
+        self.extra_headers = dict(extra_headers or {})
+        self.extra_body = dict(extra_body or {})
+
+    def generate(self, request: ModelRequest) -> ModelResponse:
+        endpoint = self.base_url
+        if not endpoint.endswith("/messages"):
+            endpoint = f"{endpoint}/messages"
+        body = {
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            "temperature": self.temperature,
+            "system": request.system_prompt,
+            "messages": [{"role": "user", "content": request.user_prompt}],
+            **self.extra_body,
+        }
+        raw, latency = _request_json(
+            endpoint=endpoint,
+            headers={
+                "x-api-key": self.api_key,
+                "anthropic-version": self.anthropic_version,
+                "content-type": "application/json",
+                **self.extra_headers,
+            },
+            body=body,
+            timeout_seconds=self.timeout_seconds,
+            max_retries=self.max_retries,
+            retry_backoff_seconds=self.retry_backoff_seconds,
+        )
+        blocks = raw.get("content", [])
+        if not isinstance(blocks, list):
+            raise ValueError("Anthropic response content must be a list")
+        content = "".join(
+            str(block.get("text", ""))
+            for block in blocks
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+        if not content.strip():
+            raise ValueError("Anthropic response has no text content")
+        usage = raw.get("usage", {}) or {}
+        return ModelResponse(
+            content=content,
+            parsed=parse_json_content(content),
+            input_tokens=int(usage.get("input_tokens", 0) or 0),
+            output_tokens=int(usage.get("output_tokens", 0) or 0),
             latency_seconds=latency,
             raw=raw,
         )
@@ -171,9 +257,9 @@ class CommandBackend:
         self.timeout_seconds = timeout_seconds
 
     def generate(self, request: ModelRequest) -> ModelResponse:
-        # The runner keeps the full benchmark spec in private metadata for offline
-        # deterministic controls. Never expose that spec to an evaluated command,
-        # because it contains the gold facts and risk labels.
+        # The full benchmark spec is private verifier metadata and contains gold
+        # labels. It is available only to deterministic controls, never to an
+        # evaluated local command.
         safe_metadata = {
             key: value for key, value in request.metadata.items() if key != "spec"
         }
@@ -322,19 +408,25 @@ class DeterministicControlBackend:
         )
 
 
+def _resolve_config_value(config: dict[str, Any], name: str) -> Any:
+    env_name = str(config.get(f"{name}_env", ""))
+    return os.getenv(env_name) if env_name else config.get(name)
+
+
 def backend_from_config(config: dict[str, Any]) -> ModelBackend:
     backend_type = str(config.get("type", ""))
     if backend_type == "openai_compatible":
-        api_key_env = str(config.get("api_key_env", ""))
-        base_url_env = str(config.get("base_url_env", ""))
-        api_key = os.getenv(api_key_env) if api_key_env else config.get("api_key")
-        base_url = os.getenv(base_url_env) if base_url_env else config.get("base_url")
+        api_key = _resolve_config_value(config, "api_key")
+        base_url = _resolve_config_value(config, "base_url")
+        model = _resolve_config_value(config, "model")
         if not api_key:
-            raise RuntimeError(f"Missing API key; set {api_key_env or 'api_key'}")
+            raise RuntimeError("Missing OpenAI-compatible API key")
         if not base_url:
-            raise RuntimeError(f"Missing base URL; set {base_url_env or 'base_url'}")
+            raise RuntimeError("Missing OpenAI-compatible base URL")
+        if not model:
+            raise RuntimeError("Missing OpenAI-compatible model identifier")
         return OpenAICompatibleBackend(
-            model=str(config["model"]),
+            model=str(model),
             base_url=str(base_url),
             api_key=str(api_key),
             timeout_seconds=int(config.get("timeout_seconds", 180)),
@@ -349,6 +441,30 @@ def backend_from_config(config: dict[str, Any]) -> ModelBackend:
             ),
             max_retries=int(config.get("max_retries", 3)),
             retry_backoff_seconds=float(config.get("retry_backoff_seconds", 2.0)),
+            extra_body=dict(config.get("extra_body", {})),
+        )
+    if backend_type == "anthropic":
+        api_key = _resolve_config_value(config, "api_key")
+        base_url = _resolve_config_value(config, "base_url") or "https://api.anthropic.com/v1"
+        model = _resolve_config_value(config, "model")
+        if not api_key:
+            raise RuntimeError("Missing Anthropic API key")
+        if not model:
+            raise RuntimeError("Missing Anthropic model identifier")
+        return AnthropicMessagesBackend(
+            model=str(model),
+            api_key=str(api_key),
+            base_url=str(base_url),
+            anthropic_version=str(config.get("anthropic_version", "2023-06-01")),
+            timeout_seconds=int(config.get("timeout_seconds", 180)),
+            temperature=float(config.get("temperature", 0.0)),
+            max_tokens=int(config.get("max_tokens", 4096)),
+            max_retries=int(config.get("max_retries", 3)),
+            retry_backoff_seconds=float(config.get("retry_backoff_seconds", 2.0)),
+            extra_headers={
+                str(key): str(value)
+                for key, value in dict(config.get("extra_headers", {})).items()
+            },
             extra_body=dict(config.get("extra_body", {})),
         )
     if backend_type == "command":
