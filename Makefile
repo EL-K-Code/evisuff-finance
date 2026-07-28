@@ -19,7 +19,7 @@ clean-paper:
 	$(MAKE) -C paper clean
 
 workflow-test:
-	PYTHONPATH=src python -m unittest tests.test_enterprise_workflow -v
+	PYTHONPATH=src python -m unittest discover -s tests -p 'test_enterprise_workflow.py' -v
 
 workflow-pilot:
 	PYTHONPATH=src python -m evisuff.workflow_cli synthetic-pilot data/ipo_workflow_pilot/spec.json --runs-dir results/ipo_pilot_runs --output results/ipo_workflow_pilot.json
