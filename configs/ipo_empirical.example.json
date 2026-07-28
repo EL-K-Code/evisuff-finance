@@ -1,0 +1,65 @@
+{
+  "experiment_id": "ipo-workflow-frontier-models-v1",
+  "cases": [
+    "../data/ipo_workflow_pilot/spec.json"
+  ],
+  "conditions": [
+    "isolated",
+    "generalist",
+    "multi_agent"
+  ],
+  "repetitions": 3,
+  "output_root": "../results/ipo_empirical",
+  "systems": [
+    {
+      "system_id": "qwen-model-placeholder",
+      "enabled": false,
+      "backend": {
+        "type": "openai_compatible",
+        "model": "MODEL_NAME_HERE",
+        "base_url_env": "QWEN_API_BASE",
+        "api_key_env": "QWEN_API_KEY",
+        "temperature": 0.0,
+        "max_tokens": 4096,
+        "timeout_seconds": 300,
+        "max_retries": 3,
+        "use_json_response_format": true
+      },
+      "pricing_usd_per_million_tokens": {
+        "input": 0.0,
+        "output": 0.0
+      }
+    },
+    {
+      "system_id": "kimi-model-placeholder",
+      "enabled": false,
+      "backend": {
+        "type": "openai_compatible",
+        "model": "MODEL_NAME_HERE",
+        "base_url_env": "KIMI_API_BASE",
+        "api_key_env": "KIMI_API_KEY",
+        "temperature": 0.0,
+        "max_tokens": 4096,
+        "timeout_seconds": 300,
+        "max_retries": 3,
+        "use_json_response_format": true
+      },
+      "pricing_usd_per_million_tokens": {
+        "input": 0.0,
+        "output": 0.0
+      }
+    },
+    {
+      "system_id": "local-agent-command",
+      "enabled": false,
+      "backend": {
+        "type": "command",
+        "command": [
+          "python",
+          "path/to/your_agent.py"
+        ],
+        "timeout_seconds": 600
+      }
+    }
+  ]
+}
