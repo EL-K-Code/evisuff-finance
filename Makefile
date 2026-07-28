@@ -36,6 +36,7 @@ privacy-test:
 provider-test:
 	PYTHONPATH=src python -m unittest discover -s tests -p 'test_anthropic_backend.py' -v
 	PYTHONPATH=src python -m unittest discover -s tests -p 'test_prepare_real_run.py' -v
+	PYTHONPATH=src python -m unittest discover -s tests -p 'test_experiment_env.py' -v
 
 real-case-validate:
 	PYTHONPATH=src python -m evisuff.real_cases_cli data/ipo_real_cases/index.json --output results/real_ipo_case_validation.json
@@ -47,4 +48,4 @@ prepare-real-run:
 	python tools/prepare_real_run.py --env .env --output configs/ipo_empirical.local.json
 
 run-real-models:
-	PYTHONPATH=src python -m evisuff.experiment_cli run configs/ipo_empirical.local.json
+	PYTHONPATH=src python -m evisuff.experiment_cli run configs/ipo_empirical.local.json --env-file .env
