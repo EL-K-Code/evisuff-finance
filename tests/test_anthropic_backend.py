@@ -15,7 +15,9 @@ class _AnthropicHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         length = int(self.headers.get("content-length", "0"))
         type(self).request_body = json.loads(self.rfile.read(length))
-        type(self).request_headers = dict(self.headers.items())
+        type(self).request_headers = {
+            key.lower(): value for key, value in self.headers.items()
+        }
         payload = {
             "id": "msg_test",
             "type": "message",
