@@ -1,6 +1,6 @@
-# EviSuff-Finance — IPO Multi-Department Workflow Pilot
+# EviSuff-Finance — IPO Multi-Department Workflow Benchmark
 
-This repository is evolving from a single-task evidence diagnostic into a **compositional finance-agent environment**. The pilot asks a sharper question:
+This repository is evolving from a single-task evidence diagnostic into a **compositional finance-agent environment**. The core research question is:
 
 > **Can benchmark-level finance skills compose into a coherent enterprise workflow?**
 
@@ -11,17 +11,19 @@ The first environment simulates one IPO process across four departments:
 3. **Risk** — identify material risks and amendments.
 4. **ECM committee** — produce a final memo consistent with every upstream artifact.
 
-The benchmark scores both local department quality and enterprise-level coordination. A system can therefore score well on every local task while failing the overall workflow because departments use different filing versions, scenarios, values, risks, or citations.
+The benchmark scores both local department quality and enterprise-level coordination. A system can therefore score well on every local task while failing the workflow because departments use different filing versions, scenarios, values, risks, or citations.
 
 ## Why this direction
 
-Frontier agent evaluation is moving from static prompts toward stateful environments with tools, files, verifiers, traces, and multi-round workflows. The finance use case is useful because it provides verifiable numbers, provenance, cross-artifact dependencies, and high-value handoffs.
+Frontier-agent evaluation is moving from static prompts toward stateful environments with tools, files, verifiers, traces, and multi-round workflows. Finance is useful as a stress test because it provides verifiable numbers, provenance, cross-artifact dependencies, and consequential handoffs.
 
 The novelty target is **not** “another simulated bank.” The research target is the **composition gap** between isolated benchmark performance and end-to-end enterprise performance.
 
-## Pilot status
+## Current milestones
 
-The current pilot is a deterministic software-validation fixture, not a model leaderboard. It includes:
+### 1. Deterministic workflow pilot
+
+The software-validation fixture includes:
 
 - one synthetic issuer;
 - an S-1 followed by an S-1/A amendment;
@@ -29,60 +31,102 @@ The current pilot is a deterministic software-validation fixture, not a model le
 - local component checks;
 - cross-department handoff checks;
 - freshness and provenance checks;
-- three synthetic systems that validate the scoring logic.
+- three deterministic controls.
 
-The `siloed_benchmark_winners` control is intentionally locally correct for each department's declared filing, but globally inconsistent because departments do not share the same authoritative version. This validates that the benchmark can expose a composition failure that isolated task scores miss.
+The `siloed_benchmark_winners` control is internally correct within each department's declared filing but globally inconsistent because departments do not share the same authoritative version. This validates that the benchmark can expose failures that isolated task scores miss.
 
-## Run the pilot
+### 2. Empirical frontier-model runner
+
+The next-phase runner now executes a full experiment matrix across:
+
+- multiple IPO cases;
+- multiple systems or model providers;
+- three conditions: `isolated`, `generalist`, and `multi_agent`;
+- configurable repetitions.
+
+It supports:
+
+- OpenAI-compatible APIs for hosted frontier models;
+- arbitrary local agents through a command-line adapter;
+- retries and failure preservation;
+- resumable runs;
+- structured departmental handoffs;
+- trajectories and response hashes;
+- token, cost, and latency accounting;
+- automatic workflow scoring and aggregation.
+
+No API key is stored in the repository.
+
+## Quick start
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
-make workflow-test
+make test
 make workflow-pilot
+make empirical-dry-run
 ```
 
-Or directly:
+The empirical dry run uses deterministic controls only. It must never be reported as a model leaderboard.
+
+## Run frontier models
+
+Copy the provider template:
 
 ```bash
-PYTHONPATH=src python -m evisuff.workflow_cli synthetic-pilot \
-  data/ipo_workflow_pilot/spec.json \
-  --runs-dir results/ipo_pilot_runs \
-  --output results/ipo_workflow_pilot.json
+cp configs/ipo_empirical.example.json configs/ipo_empirical.local.json
 ```
+
+Enable the selected systems, freeze their exact model identifiers, set the API base URLs and keys through environment variables, then run:
+
+```bash
+PYTHONPATH=src python -m evisuff.experiment_cli run \
+  configs/ipo_empirical.local.json
+```
+
+See [`docs/empirical_phase.md`](docs/empirical_phase.md) for the full protocol, backend contract, claim boundary, and case-expansion requirements.
 
 ## Research metrics
 
-- **Component score**: mean quality across due diligence, valuation, risk, and memo artifacts.
-- **Coordination score**: freshness, shared scenario, numerical handoffs, risk propagation, and provenance.
-- **Workflow score**: `0.6 × component + 0.4 × coordination`.
-- **Composition gap**: component score minus workflow score.
-- **Enterprise success**: all critical local and coordination checks pass.
+- **Component score** — mean quality across due diligence, valuation, risk, and memo artifacts.
+- **Coordination score** — freshness, shared scenario, numerical handoffs, risk propagation, and provenance.
+- **Workflow score** — `0.6 × component + 0.4 × coordination`.
+- **Composition gap** — component score minus workflow score.
+- **Enterprise success** — all critical local and coordination checks pass.
+- **Operational metrics** — tokens, estimated cost, latency, completion rate, and failure traces.
 
 ## Repository map
 
 ```text
-data/ipo_workflow_pilot/spec.json   synthetic two-version IPO fixture
-docs/ipo_workflow_pilot.md         experimental protocol and research questions
-docs/landscape_and_novelty.md      positioning against adjacent benchmarks
-src/evisuff/enterprise_workflow.py scoring and synthetic baseline generation
-src/evisuff/workflow_cli.py         workflow pilot CLI
-tests/test_enterprise_workflow.py  deterministic tests
-results/ipo_workflow_pilot.json     generated software-validation report
-paper/ipo_workflow_pilot_outline.md paper-scale study outline
+configs/ipo_empirical_dry_run.json   offline empirical controls
+configs/ipo_empirical.example.json   hosted/local model template
+data/ipo_workflow_pilot/spec.json    synthetic two-version IPO fixture
+docs/ipo_workflow_pilot.md           benchmark protocol and research questions
+docs/empirical_phase.md              real-model experiment protocol
+docs/landscape_and_novelty.md        positioning against adjacent benchmarks
+src/evisuff/enterprise_workflow.py   artifact and workflow scoring
+src/evisuff/workflow_cli.py          deterministic workflow pilot CLI
+src/evisuff/model_backends.py        API, command, and control backends
+src/evisuff/experiment_runner.py     empirical matrix orchestration
+src/evisuff/experiment_cli.py        empirical experiment CLI
+tests/                               deterministic and empirical-runner tests
+results/ipo_workflow_pilot.json      committed software-validation report
+paper/ipo_workflow_pilot_outline.md  paper-scale study outline
 ```
 
-## Next empirical phase
+## Empirical study design
 
-The real study will replace synthetic systems with frontier models and compare:
+The research study will compare:
 
-1. isolated benchmark tasks;
-2. one generalist agent completing the workflow;
-3. a multi-agent team with departmental handoffs.
+1. isolated benchmark-like departmental tasks;
+2. one generalist agent completing the entire workflow;
+3. a specialized multi-agent team with explicit handoffs.
 
-The key empirical test is whether model rankings and success rates survive the transition from isolated skills to a shared enterprise workflow.
+The central test is whether model rankings, success rates, and cost-efficiency survive the transition from isolated skills to a shared enterprise workflow.
+
+A conference-grade result requires several public IPO families, multiple repetitions, frozen model versions, uncertainty estimates, verifier review, and inspection of natural model failures.
 
 ## Legacy EviSuff scaffold
 
-The original counterfactual evidence-sufficiency code remains available in the repository and continues to support its existing validation, condition-building, and scoring commands. It may later contribute an evidence-ablation diagnostic inside the due-diligence department.
+The original counterfactual evidence-sufficiency code remains available and continues to support validation, condition building, and scoring. It may later contribute an evidence-ablation diagnostic inside the due-diligence department.
