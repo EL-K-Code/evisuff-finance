@@ -26,3 +26,7 @@ jobs:
         run: make workflow-pilot
       - name: Verify committed pilot result
         run: git diff --exit-code -- results/ipo_workflow_pilot.json
+      - name: Run empirical-runner tests
+        run: make experiment-test
+      - name: Run offline empirical matrix
+        run: make empirical-dry-run
