@@ -1,0 +1,31 @@
+{
+  "experiment_id": "ipo-workflow-dry-run-v1",
+  "cases": [
+    "../data/ipo_workflow_pilot/spec.json"
+  ],
+  "conditions": [
+    "isolated",
+    "generalist",
+    "multi_agent"
+  ],
+  "repetitions": 1,
+  "output_root": "../results/empirical_dry_run",
+  "systems": [
+    {
+      "system_id": "oracle-control",
+      "enabled": true,
+      "backend": {
+        "type": "deterministic_control",
+        "mode": "oracle"
+      }
+    },
+    {
+      "system_id": "stale-silo-control",
+      "enabled": true,
+      "backend": {
+        "type": "deterministic_control",
+        "mode": "stale_silo"
+      }
+    }
+  ]
+}
