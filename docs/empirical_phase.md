@@ -21,15 +21,17 @@ The current annotation status requires an independent second review before paper
 
 ### Isolated
 
-Each department receives the source packet but no upstream artifact. This approximates evaluating due diligence, valuation, risk analysis, and memo production as separate benchmark tasks.
+Each department receives the source packet but no upstream artifact. This approximates evaluating due diligence, valuation, risk analysis, and memo production as separate benchmark tasks. It requires four calls per case.
 
 ### Generalist
 
-One model call produces all four artifacts and is instructed to reconcile them before returning.
+One model call produces all four artifacts and is instructed to reconcile them before returning. It requires one call per case.
 
 ### Multi-agent
 
-Four sequential specialist calls are used. Due diligence hands facts to valuation and risk; all upstream artifacts are handed to the ECM memo agent.
+Four sequential specialist calls are used. Due diligence hands facts to valuation and risk; all upstream artifacts are handed to the ECM memo agent. It requires four calls per case.
+
+The complete design therefore uses nine calls per case and repetition. With three cases and three repetitions, each evaluated system requires 81 calls.
 
 ## Required systems
 
@@ -39,23 +41,38 @@ Freeze exact provider and model identifiers before execution. The initial compar
 - one strong Western frontier model;
 - one additional cost-efficient or open-weight baseline.
 
-Never use moving aliases such as `latest` when a dated or immutable identifier is available. Save the complete run config and case-pack commit SHA with the results.
+The repository includes adapters for Qwen, Kimi, OpenAI-compatible providers, Anthropic's native Messages API, and local command agents. Never use moving aliases such as `latest` when a dated or immutable identifier is available. Save the complete run config and case-pack commit SHA with the results.
 
 ## Repetitions
 
 Use at least three repetitions per `case × system × condition`. Increase repetitions when outputs remain highly variable or when rank conclusions depend on small score differences.
 
+## Secure provider configuration
+
+1. Copy `sample.env` to `.env`.
+2. Enable only selected providers.
+3. Enter API keys, endpoints, exact model identifiers, and dated token prices.
+4. Run `make prepare-real-run`.
+5. Review the printed systems and planned call count.
+6. Run `make run-real-models`.
+
+The generated `configs/ipo_empirical.local.json` contains no API key and is ignored by Git. The experiment command reloads `.env` at execution time through `--env-file .env`.
+
 ## Backend contract
 
-### Hosted models
+### OpenAI-compatible hosted models
 
-The dependency-free OpenAI-compatible backend sends only:
+The dependency-free backend sends only:
 
 - system prompt;
 - task prompt containing `source_packet`;
 - frozen generation parameters.
 
-API keys and base URLs come from environment variables. They must never be committed.
+It supports JSON response mode, retries, custom headers, and provider-specific request fields.
+
+### Anthropic hosted models
+
+The native Messages backend sends the system prompt separately, uses the Messages endpoint, reads native token usage, and parses the returned text as the required JSON artifact.
 
 ### Local command agents
 
@@ -111,8 +128,17 @@ Deterministic controls validate software and verifier behavior; they are not mod
 ```bash
 make real-case-validate
 make empirical-dry-run
-cp configs/ipo_empirical.example.json configs/ipo_empirical.local.json
-PYTHONPATH=src python -m evisuff.experiment_cli run configs/ipo_empirical.local.json
+cp sample.env .env
+make prepare-real-run
+make run-real-models
+```
+
+Direct execution without `make`:
+
+```bash
+python tools/prepare_real_run.py --env .env --output configs/ipo_empirical.local.json
+PYTHONPATH=src python -m evisuff.experiment_cli run \
+  configs/ipo_empirical.local.json --env-file .env
 ```
 
 ## Minimum paper-grade table
