@@ -1,4 +1,4 @@
-.PHONY: test validate smoke audit paper clean-paper workflow-test workflow-pilot experiment-test empirical-dry-run real-case-test real-case-validate privacy-test
+.PHONY: test validate smoke audit paper clean-paper workflow-test workflow-pilot experiment-test empirical-dry-run real-case-test real-case-validate privacy-test provider-test prepare-real-run run-real-models
 
 test:
 	PYTHONPATH=src python -m unittest discover -s tests -v
@@ -33,8 +33,18 @@ real-case-test:
 privacy-test:
 	PYTHONPATH=src python -m unittest discover -s tests -p 'test_backend_privacy.py' -v
 
+provider-test:
+	PYTHONPATH=src python -m unittest discover -s tests -p 'test_anthropic_backend.py' -v
+	PYTHONPATH=src python -m unittest discover -s tests -p 'test_prepare_real_run.py' -v
+
 real-case-validate:
 	PYTHONPATH=src python -m evisuff.real_cases_cli data/ipo_real_cases/index.json --output results/real_ipo_case_validation.json
 
 empirical-dry-run:
 	PYTHONPATH=src python -m evisuff.experiment_cli run configs/ipo_empirical_dry_run.json --overwrite
+
+prepare-real-run:
+	python tools/prepare_real_run.py --env .env --output configs/ipo_empirical.local.json
+
+run-real-models:
+	PYTHONPATH=src python -m evisuff.experiment_cli run configs/ipo_empirical.local.json
