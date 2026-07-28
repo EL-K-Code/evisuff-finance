@@ -1,0 +1,38 @@
+{
+  "workflow_id": "orion-mobility-ipo-pilot-v1",
+  "issuer": "Orion Mobility, Inc. (synthetic fixture)",
+  "required_source_version": "v2",
+  "required_scenario_id": "base_case",
+  "allowed_scenarios": ["base_case"],
+  "departments": ["due_diligence", "valuation", "risk", "ecm_committee"],
+  "versions": {
+    "v1": {
+      "document_id": "ORION-S1-001",
+      "form_type": "S-1",
+      "facts": {
+        "revenue_2025_usd_m": 320.0,
+        "price_per_share_usd": 15.0,
+        "primary_shares_m": 20.0,
+        "existing_shares_m": 100.0,
+        "debt_usd_m": 80.0,
+        "cash_usd_m": 40.0,
+        "customer_concentration_pct": 48.0
+      },
+      "risk_flags": ["customer_concentration", "founder_control"]
+    },
+    "v2": {
+      "document_id": "ORION-S1A-002",
+      "form_type": "S-1/A",
+      "facts": {
+        "revenue_2025_usd_m": 320.0,
+        "price_per_share_usd": 18.0,
+        "primary_shares_m": 24.0,
+        "existing_shares_m": 100.0,
+        "debt_usd_m": 80.0,
+        "cash_usd_m": 40.0,
+        "customer_concentration_pct": 52.0
+      },
+      "risk_flags": ["customer_concentration", "founder_control", "regulatory_investigation"]
+    }
+  }
+}
