@@ -1,0 +1,69 @@
+{
+  "interpretation": {
+    "coordinated_team": "Oracle-like consistency control.",
+    "partial_handoff": "Latest filing is used, but a risk and provenance handoff are incomplete.",
+    "siloed_benchmark_winners": "Each department is internally correct for its declared filing, but versions do not compose into a current enterprise state."
+  },
+  "pilot": "ipo_multi_department_composition",
+  "result_type": "synthetic_workflow_software_validation_not_model_results",
+  "systems": [
+    {
+      "artifact_scores": {
+        "diligence": 1.0,
+        "memo": 1.0,
+        "risk": 1.0,
+        "valuation": 1.0
+      },
+      "component_score": 1.0,
+      "composition_gap": 0.0,
+      "coordination_score": 1.0,
+      "enterprise_success": true,
+      "failed_checks": [],
+      "system_id": "coordinated_team",
+      "workflow_score": 1.0
+    },
+    {
+      "artifact_scores": {
+        "diligence": 1.0,
+        "memo": 1.0,
+        "risk": 1.0,
+        "valuation": 1.0
+      },
+      "component_score": 1.0,
+      "composition_gap": 0.126316,
+      "coordination_score": 0.684211,
+      "enterprise_success": false,
+      "failed_checks": [
+        "freshness.valuation",
+        "freshness.memo",
+        "handoff.diligence_to_valuation.price_per_share_usd",
+        "handoff.diligence_to_valuation.primary_shares_m",
+        "handoff.risk_to_memo",
+        "latest_provenance.memo"
+      ],
+      "system_id": "siloed_benchmark_winners",
+      "workflow_score": 0.873684
+    },
+    {
+      "artifact_scores": {
+        "diligence": 1.0,
+        "memo": 0.75,
+        "risk": 0.666667,
+        "valuation": 1.0
+      },
+      "component_score": 0.854167,
+      "composition_gap": -0.037281,
+      "coordination_score": 0.947368,
+      "enterprise_success": false,
+      "failed_checks": [
+        "risk.coverage",
+        "memo.risks",
+        "memo.citations",
+        "latest_provenance.memo"
+      ],
+      "system_id": "partial_handoff",
+      "workflow_score": 0.891447
+    }
+  ],
+  "workflow_id": "orion-mobility-ipo-pilot-v1"
+}
