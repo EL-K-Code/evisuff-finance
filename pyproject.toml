@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "evisuff-finance"
-version = "0.2.0"
-description = "Compositional evaluation of finance-agent skills in multi-department IPO workflows"
+version = "0.3.0"
+description = "Compositional evaluation of frontier finance agents in multi-department IPO workflows"
 requires-python = ">=3.10"
 dependencies = []
 
@@ -16,6 +16,7 @@ analysis = ["numpy>=1.26", "pandas>=2.2", "scipy>=1.12", "statsmodels>=0.14"]
 [project.scripts]
 evisuff = "evisuff.cli:main"
 evisuff-workflow = "evisuff.workflow_cli:main"
+evisuff-experiment = "evisuff.experiment_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
