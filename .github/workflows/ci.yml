@@ -51,7 +51,7 @@ jobs:
     env:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       OPENROUTER_API_BASE: https://openrouter.ai/api/v1
-      OPENROUTER_MODEL: openai/gpt-oss-120b:free
+      OPENROUTER_MODEL: openai/gpt-oss-20b:free
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -113,7 +113,7 @@ jobs:
               "output_root": "../results/openrouter_reddit_generalist_smoke",
               "systems": [
                   {
-                      "system_id": "openrouter-openai-gpt-oss-120b-free",
+                      "system_id": "openrouter-openai-gpt-oss-20b-free",
                       "enabled": True,
                       "backend": {
                           "type": "command",
@@ -155,7 +155,7 @@ jobs:
           report = reports[0]
           safe = {
               "result_type": "openrouter_single_model_single_case_stateful_smoke_not_final_paper_results",
-              "model": "openai/gpt-oss-120b:free",
+              "model": "openai/gpt-oss-20b:free",
               "case": "reddit",
               "condition": report.get("condition"),
               "status": report.get("status"),
