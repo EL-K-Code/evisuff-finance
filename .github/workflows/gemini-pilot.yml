@@ -13,12 +13,12 @@ permissions:
 
 concurrency:
   group: gemini-two-case-pilot
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   safety:
-    name: Prevent duplicate provider calls
+    name: Cancel duplicate provider calls
     runs-on: ubuntu-latest
     steps:
       - name: Confirm no-op safety run
-        run: echo "The approved two-case pilot is already running; this job makes no API calls."
+        run: echo "Duplicate provider runs are cancelled; this safety job makes no API calls."
