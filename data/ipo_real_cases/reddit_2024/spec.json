@@ -25,7 +25,7 @@
       "debt_usd_m",
       "cash_usd_m"
     ],
-    "chronology_rule": "Use the latest packet version. The March 25 closing update supersedes preliminary pricing assumptions.",
+    "chronology_rule": "Use the latest packet version. The March 25 closing update supersedes preliminary pricing assumptions and includes the FTC inquiry disclosed after Reddit received the March 14 letter.",
     "versions": [
       {
         "version_id": "v1",
@@ -127,6 +127,11 @@
             "evidence_id": "risk_control",
             "risk_id": "dual_class_control",
             "text": "The dual-class structure concentrates voting control with Class B holders."
+          },
+          {
+            "evidence_id": "risk_ftc_data_licensing",
+            "risk_id": "ftc_data_licensing_inquiry",
+            "text": "After receiving a March 14, 2024 letter, Reddit disclosed a non-public FTC inquiry into the sale, licensing, or sharing of user-generated content with third parties to train AI models; the inquiry could create costs, reputational harm, fines, or required business changes."
           }
         ]
       }
@@ -162,7 +167,8 @@
       "risk_flags": [
         "advertising_dependence",
         "content_moderation",
-        "dual_class_control"
+        "dual_class_control",
+        "ftc_data_licensing_inquiry"
       ]
     }
   }
