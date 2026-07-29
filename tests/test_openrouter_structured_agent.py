@@ -20,10 +20,38 @@ class OpenRouterStructuredAgentTests(unittest.TestCase):
         }
         self.assertEqual(agent._extract_content(payload), '{"risk_flags": []}')
 
+    def test_parse_structured_content_accepts_fenced_json(self) -> None:
+        payload = {
+            "department": "risk",
+            "source_version": "v2",
+            "scenario_id": "base_case",
+            "risk_flags": ["ftc_data_licensing_inquiry"],
+        }
+        content = "```json\n" + json.dumps(payload) + "\n```"
+        self.assertEqual(agent._parse_structured_content(content, "risk"), payload)
+
+    def test_parse_structured_content_accepts_harmony_final_channel(self) -> None:
+        payload = {
+            "department": "risk",
+            "source_version": "v2",
+            "scenario_id": "base_case",
+            "risk_flags": [],
+        }
+        content = (
+            "<|channel|>analysis<|message|>internal reasoning"
+            "<|channel|>final<|message|>"
+            + json.dumps(payload)
+        )
+        self.assertEqual(agent._parse_structured_content(content, "risk"), payload)
+
+    def test_parse_structured_content_rejects_wrong_shape(self) -> None:
+        with self.assertRaisesRegex(ValueError, "required JSON object"):
+            agent._parse_structured_content('{"answer": 42}', "risk")
+
     def test_run_agent_uses_fixed_model_and_json_schema(self) -> None:
         response = {
             "id": "test-response",
-            "model": "openai/gpt-oss-120b:free",
+            "model": "openai/gpt-oss-20b:free",
             "choices": [
                 {
                     "message": {
@@ -56,7 +84,7 @@ class OpenRouterStructuredAgentTests(unittest.TestCase):
         }
         env = {
             "OPENROUTER_API_KEY": "secret-test-key",
-            "OPENROUTER_MODEL": "openai/gpt-oss-120b:free",
+            "OPENROUTER_MODEL": "openai/gpt-oss-20b:free",
         }
         with patch.dict(os.environ, env, clear=False), patch.object(
             agent, "_request_json", side_effect=fake_request
@@ -67,11 +95,12 @@ class OpenRouterStructuredAgentTests(unittest.TestCase):
             captured["endpoint"], "https://openrouter.ai/api/v1/chat/completions"
         )
         self.assertEqual(
-            captured["body"]["model"], "openai/gpt-oss-120b:free"
+            captured["body"]["model"], "openai/gpt-oss-20b:free"
         )
         self.assertEqual(
             captured["body"]["response_format"]["type"], "json_schema"
         )
+        self.assertTrue(captured["body"]["provider"]["require_parameters"])
         self.assertNotIn("secret-test-key", json.dumps(result))
         self.assertEqual(result["input_tokens"], 12)
         self.assertEqual(result["output_tokens"], 8)
