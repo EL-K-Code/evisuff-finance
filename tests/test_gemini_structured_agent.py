@@ -6,6 +6,8 @@ from tools.gemini_structured_agent import (
     DEPARTMENTS,
     FACT_FIELDS,
     METRIC_FIELDS,
+    SCENARIOS,
+    SOURCE_VERSIONS,
     department_schemas,
     response_format,
     response_schema,
@@ -42,6 +44,18 @@ class GeminiStructuredAgentSchemaTests(unittest.TestCase):
             set(schemas["memo"]["properties"]["headline_metrics"]["required"]),
             set(METRIC_FIELDS),
         )
+
+    def test_staged_identifiers_use_public_contract_enums(self) -> None:
+        for name, schema in department_schemas().items():
+            with self.subTest(department=name):
+                self.assertEqual(
+                    schema["properties"]["source_version"]["enum"],
+                    list(SOURCE_VERSIONS),
+                )
+                self.assertEqual(
+                    schema["properties"]["scenario_id"]["enum"],
+                    list(SCENARIOS),
+                )
 
     def test_response_format_routes_to_requested_department(self) -> None:
         generalist = response_format(None)
