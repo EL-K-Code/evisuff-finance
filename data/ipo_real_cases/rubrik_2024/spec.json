@@ -61,18 +61,22 @@
           },
           {
             "evidence_id": "risk_losses",
+            "risk_id": "operating_losses",
             "text": "Rubrik had a history of operating losses and might not achieve sustained profitability."
           },
           {
             "evidence_id": "risk_security",
+            "risk_id": "cybersecurity_and_product_failure",
             "text": "Product failures, vulnerabilities, or security incidents could harm customers and the business."
           },
           {
             "evidence_id": "risk_investigation",
+            "risk_id": "government_investigation",
             "text": "Rubrik disclosed ongoing government-contract-related investigations and uncertain consequences."
           },
           {
             "evidence_id": "risk_control",
+            "risk_id": "dual_class_control",
             "text": "Class B shares carry 20 votes each and concentrate voting power."
           }
         ]
@@ -116,18 +120,22 @@
           },
           {
             "evidence_id": "risk_losses",
+            "risk_id": "operating_losses",
             "text": "Rubrik had a history of operating losses and might not achieve sustained profitability."
           },
           {
             "evidence_id": "risk_security",
+            "risk_id": "cybersecurity_and_product_failure",
             "text": "Product failures, vulnerabilities, or security incidents could harm customers and the business."
           },
           {
             "evidence_id": "risk_investigation",
+            "risk_id": "government_investigation",
             "text": "Rubrik disclosed ongoing government-contract-related investigations and uncertain consequences."
           },
           {
             "evidence_id": "risk_control",
+            "risk_id": "dual_class_control",
             "text": "Class B shares carry 20 votes each and concentrate voting power."
           }
         ]
