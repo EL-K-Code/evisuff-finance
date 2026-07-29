@@ -38,3 +38,5 @@ jobs:
         run: make provider-test
       - name: Run offline real-case matrix
         run: make empirical-dry-run
+      - name: Run stateful amendment controls
+        run: make staged-dry-run
