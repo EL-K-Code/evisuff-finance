@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from evisuff.enterprise_workflow import (
+    coordination_checks,
     financial_metrics,
     score_memo,
     score_risk,
@@ -23,6 +24,45 @@ CASE_PATHS = (
 
 def load_spec(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def coordinated_artifacts(spec: dict) -> dict[str, dict]:
+    version_id = spec["required_source_version"]
+    version = spec["versions"][version_id]
+    facts = dict(version["facts"])
+    metrics = financial_metrics(facts)
+    document_id = version["document_id"]
+    risks = list(version["risk_flags"])
+    scenario_id = spec["required_scenario_id"]
+    return {
+        "diligence": {
+            "source_version": version_id,
+            "scenario_id": scenario_id,
+            "facts": facts,
+            "citations": {
+                key: f"{document_id}:fact:{key}" for key in facts
+            },
+        },
+        "valuation": {
+            "source_version": version_id,
+            "scenario_id": scenario_id,
+            "inputs": facts,
+            "outputs": dict(metrics),
+        },
+        "risk": {
+            "source_version": version_id,
+            "scenario_id": scenario_id,
+            "risk_flags": risks,
+        },
+        "memo": {
+            "source_version": version_id,
+            "scenario_id": scenario_id,
+            "headline_metrics": dict(metrics),
+            "top_risks": risks,
+            "citations": [f"{document_id}:summary:offering"],
+            "recommendation": "proceed_with_conditions",
+        },
+    }
 
 
 class WorkflowScoringContractTests(unittest.TestCase):
@@ -75,6 +115,31 @@ class WorkflowScoringContractTests(unittest.TestCase):
         memo_score = score_memo(spec, memo)
         self.assertTrue(all(check.passed for check in memo_score.checks))
 
+    def test_reporting_scale_rounding_is_accepted_across_metric_handoff(self) -> None:
+        spec = load_spec(CASE_PATHS[1])
+        artifacts = coordinated_artifacts(spec)
+        artifacts["valuation"]["outputs"]["dilution_pct"] = 15.034335
+        artifacts["memo"]["headline_metrics"]["dilution_pct"] = 15.034326
+
+        check = next(
+            item
+            for item in coordination_checks(spec, artifacts)
+            if item.check_id == "handoff.valuation_to_memo.dilution_pct"
+        )
+        self.assertTrue(check.passed)
+
+    def test_material_metric_handoff_error_still_fails(self) -> None:
+        spec = load_spec(CASE_PATHS[1])
+        artifacts = coordinated_artifacts(spec)
+        artifacts["memo"]["headline_metrics"]["dilution_pct"] += 0.02
+
+        check = next(
+            item
+            for item in coordination_checks(spec, artifacts)
+            if item.check_id == "handoff.valuation_to_memo.dilution_pct"
+        )
+        self.assertFalse(check.passed)
+
     def test_material_metric_error_still_fails(self) -> None:
         spec = load_spec(CASE_PATHS[0])
         version_id = spec["required_source_version"]
@@ -89,7 +154,9 @@ class WorkflowScoringContractTests(unittest.TestCase):
         }
         score = score_valuation(spec, artifact)
         check = next(
-            item for item in score.checks if item.check_id == "valuation.output.dilution_pct"
+            item
+            for item in score.checks
+            if item.check_id == "valuation.output.dilution_pct"
         )
         self.assertFalse(check.passed)
 
@@ -105,7 +172,9 @@ class WorkflowScoringContractTests(unittest.TestCase):
             ],
         }
         score = score_risk(spec, artifact)
-        check = next(item for item in score.checks if item.check_id == "risk.no_unsupported")
+        check = next(
+            item for item in score.checks if item.check_id == "risk.no_unsupported"
+        )
         self.assertFalse(check.passed)
         self.assertTrue(check.critical)
 
