@@ -48,7 +48,17 @@ class OpenRouterStructuredAgentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "required JSON object"):
             agent._parse_structured_content('{"answer": 42}', "risk")
 
-    def test_run_agent_uses_fixed_model_and_json_schema(self) -> None:
+    def test_retry_budget_accepts_zero_and_rejects_invalid_values(self) -> None:
+        with patch.dict(os.environ, {"OPENROUTER_MAX_RETRIES": "0"}, clear=False):
+            self.assertEqual(agent._retry_budget(), 0)
+        with patch.dict(os.environ, {"OPENROUTER_MAX_RETRIES": "-1"}, clear=False):
+            with self.assertRaisesRegex(ValueError, "between 0 and 10"):
+                agent._retry_budget()
+        with patch.dict(os.environ, {"OPENROUTER_MAX_RETRIES": "many"}, clear=False):
+            with self.assertRaisesRegex(ValueError, "must be an integer"):
+                agent._retry_budget()
+
+    def test_run_agent_uses_fixed_model_json_schema_and_retry_budget(self) -> None:
         response = {
             "id": "test-response",
             "model": "openai/gpt-oss-20b:free",
@@ -75,6 +85,7 @@ class OpenRouterStructuredAgentTests(unittest.TestCase):
             captured["endpoint"] = endpoint
             captured["headers"] = headers
             captured["body"] = body
+            captured["kwargs"] = kwargs
             return response
 
         request_payload = {
@@ -85,6 +96,7 @@ class OpenRouterStructuredAgentTests(unittest.TestCase):
         env = {
             "OPENROUTER_API_KEY": "secret-test-key",
             "OPENROUTER_MODEL": "openai/gpt-oss-20b:free",
+            "OPENROUTER_MAX_RETRIES": "0",
         }
         with patch.dict(os.environ, env, clear=False), patch.object(
             agent, "_request_json", side_effect=fake_request
@@ -101,6 +113,8 @@ class OpenRouterStructuredAgentTests(unittest.TestCase):
             captured["body"]["response_format"]["type"], "json_schema"
         )
         self.assertTrue(captured["body"]["provider"]["require_parameters"])
+        self.assertEqual(captured["kwargs"]["max_retries"], 0)
+        self.assertEqual(result["provider_metadata"]["max_retries"], 0)
         self.assertNotIn("secret-test-key", json.dumps(result))
         self.assertEqual(result["input_tokens"], 12)
         self.assertEqual(result["output_tokens"], 8)
