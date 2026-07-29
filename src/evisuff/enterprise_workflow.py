@@ -13,6 +13,18 @@ ARTIFACT_FILES = {
     "memo": "memo.json",
 }
 
+# Source facts and cross-department handoffs remain effectively exact. Derived
+# metrics use reporting-scale tolerances because model outputs may round monetary
+# values expressed in USD millions and percentages without changing the economic
+# conclusion. These tolerances must be reported with empirical results.
+FACT_TOLERANCE = 1e-6
+METRIC_TOLERANCES = {
+    "gross_proceeds_usd_m": 0.01,
+    "post_money_equity_value_usd_m": 0.01,
+    "net_debt_usd_m": 0.01,
+    "dilution_pct": 0.01,
+}
+
 
 @dataclass(frozen=True)
 class Check:
@@ -64,11 +76,16 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
         handle.write("\n")
 
 
-def _close(actual: Any, expected: float, tolerance: float = 1e-6) -> bool:
+def _close(actual: Any, expected: float, tolerance: float = FACT_TOLERANCE) -> bool:
     try:
         return abs(float(actual) - float(expected)) <= tolerance
     except (TypeError, ValueError):
         return False
+
+
+def _metric_close(metric_name: str, actual: Any, expected: float) -> bool:
+    tolerance = METRIC_TOLERANCES.get(metric_name, FACT_TOLERANCE)
+    return _close(actual, expected, tolerance=tolerance)
 
 
 def _score(checks: Iterable[Check]) -> float:
@@ -137,7 +154,7 @@ def score_valuation(spec: dict[str, Any], artifact: dict[str, Any]) -> ArtifactS
     for key in ("price_per_share_usd", "primary_shares_m", "existing_shares_m", "debt_usd_m", "cash_usd_m"):
         checks.append(Check(f"valuation.input.{key}", "valuation", _close(inputs.get(key), facts[key]), True, f"Valuation input {key} matches declared source version"))
     for key, value in expected.items():
-        checks.append(Check(f"valuation.output.{key}", "valuation", _close(outputs.get(key), value), True, f"Valuation output {key} is internally correct"))
+        checks.append(Check(f"valuation.output.{key}", "valuation", _metric_close(key, outputs.get(key), value), True, f"Valuation output {key} is internally correct within its reporting tolerance"))
     checks.append(Check("valuation.scenario", "valuation", artifact.get("scenario_id") in spec["allowed_scenarios"], True, "Scenario is allowed"))
     return ArtifactScore("valuation", _score(checks), checks)
 
@@ -149,7 +166,7 @@ def score_risk(spec: dict[str, Any], artifact: dict[str, Any]) -> ArtifactScore:
     actual = set(artifact.get("risk_flags", []))
     checks = [
         Check("risk.coverage", "risk", expected.issubset(actual), True, "All risks in declared source version are covered"),
-        Check("risk.no_unsupported", "risk", actual.issubset(expected), False, "No unsupported risk is introduced"),
+        Check("risk.no_unsupported", "risk", actual.issubset(expected), True, "No unsupported risk is introduced"),
         Check("risk.scenario", "risk", artifact.get("scenario_id") in spec["allowed_scenarios"], True, "Scenario is allowed"),
     ]
     return ArtifactScore("risk", _score(checks), checks)
@@ -166,7 +183,7 @@ def score_memo(spec: dict[str, Any], artifact: dict[str, Any]) -> ArtifactScore:
     citations = artifact.get("citations", [])
     checks: list[Check] = []
     for key, expected in expected_metrics.items():
-        checks.append(Check(f"memo.metric.{key}", "memo", _close(metrics.get(key), expected), True, f"Memo metric {key} is correct for declared version"))
+        checks.append(Check(f"memo.metric.{key}", "memo", _metric_close(key, metrics.get(key), expected), True, f"Memo metric {key} is correct for declared version within its reporting tolerance"))
     checks.extend(
         [
             Check("memo.risks", "memo", expected_risks.issubset(risks), True, "Memo contains all material risks for declared version"),
