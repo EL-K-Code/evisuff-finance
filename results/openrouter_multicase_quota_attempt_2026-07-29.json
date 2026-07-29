@@ -1,0 +1,48 @@
+{
+  "result_type": "openrouter_multicase_attempt_not_a_model_result",
+  "provider": "openrouter",
+  "model": "openai/gpt-oss-20b:free",
+  "attempted_on": "2026-07-29",
+  "cases": [
+    {
+      "case": "coreweave_2025",
+      "condition": "staged_multi_agent",
+      "status": "not_evaluated",
+      "reportable": false,
+      "planned_calls": 8,
+      "successful_model_calls": 0,
+      "reason": "OpenRouter free-tier daily quota was exhausted before the first model response."
+    },
+    {
+      "case": "rubrik_2024",
+      "condition": "staged_multi_agent",
+      "status": "not_evaluated",
+      "reportable": false,
+      "planned_calls": 8,
+      "successful_model_calls": 0,
+      "reason": "OpenRouter free-tier daily quota was exhausted before the first model response."
+    }
+  ],
+  "quota_observation": {
+    "limit": 50,
+    "remaining": 0,
+    "limit_source": "openrouter_free_tier_daily",
+    "reset_utc": "2026-07-30T00:00:00Z",
+    "reset_europe_paris": "2026-07-30T02:00:00+02:00",
+    "hidden_retries": 0
+  },
+  "github_actions": {
+    "run_id": 30455578818,
+    "artifact_id": 8725489574,
+    "artifact_name": "openrouter-multicase-multi-agent-30455578818",
+    "artifact_digest": "sha256:230f62af25e2368ff3280b025eb70f021bf44a5c880be948c1d30f6abedd84fc",
+    "head_sha": "cdebb9149cc6ebe8e4e0d1413287918763e83d46"
+  },
+  "benchmark_hardening": {
+    "source_version_enum": ["v1", "v2"],
+    "scenario_id_enum": ["base_case"],
+    "retry_budget_is_explicit": true,
+    "note": "These contract changes were validated by the provider-free CI before the quota-blocked attempt."
+  },
+  "claim_boundary": "No CoreWeave or Rubrik model score can be reported from this attempt. Technical fallback zeros, if present in low-level failure files, are not model results."
+}
