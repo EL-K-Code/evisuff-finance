@@ -2,28 +2,29 @@ name: Gemini provider smoke test
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/gemini-smoke.yml
+    inputs:
+      model:
+        description: Preferred Gemini model ID; falls back to an available Flash model
+        required: false
+        default: gemini-3.6-flash
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: gemini-two-case-pilot
+  group: gemini-provider-smoke
   cancel-in-progress: false
 
 jobs:
-  pilot:
-    name: Rubrik and CoreWeave across three conditions
+  smoke:
+    name: One Reddit generalist call
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_API_BASE: https://generativelanguage.googleapis.com/v1beta/openai
-      GEMINI_MODEL: gemini-3.6-flash
+      REQUESTED_GEMINI_MODEL: ${{ inputs.model || 'gemini-3.6-flash' }}
 
     steps:
       - name: Check out benchmark branch
@@ -34,157 +35,77 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Verify secret and exact model
+      - name: Verify Gemini secret exists
         shell: bash
         run: |
           if [ -z "${GEMINI_API_KEY:-}" ]; then
             echo "Missing repository secret GEMINI_API_KEY" >&2
             exit 1
           fi
-          python - <<'PY'
-          import json
-          import os
-          import urllib.request
 
-          base = os.environ["GEMINI_API_BASE"].rstrip("/")
-          request = urllib.request.Request(
-              f"{base}/models",
-              headers={
-                  "Authorization": f"Bearer {os.environ['GEMINI_API_KEY']}",
-                  "Accept": "application/json",
-              },
-          )
-          with urllib.request.urlopen(request, timeout=60) as response:
-              payload = json.loads(response.read().decode("utf-8"))
-          rows = payload.get("data", payload.get("models", []))
-          available = {
-              str(item.get("id", item.get("name", ""))).removeprefix("models/")
-              for item in rows
-              if isinstance(item, dict)
-          }
-          model = os.environ["GEMINI_MODEL"]
-          if model not in available:
-              raise SystemExit(f"Required pilot model is unavailable: {model}")
-          print(f"Frozen pilot model: {model}")
-          PY
+      - name: Install benchmark
+        run: python -m pip install -e .
 
-      - name: Install benchmark and validate adapter
+      - name: Select an available Gemini Flash model
         shell: bash
         run: |
-          python -m pip install -e .
-          python tools/gemini_structured_agent.py --self-test
-          PYTHONPATH=src python -m unittest tests.test_gemini_structured_agent -v
-          PYTHONPATH=src python -m evisuff.real_cases_cli \
-            data/ipo_real_cases/index.json \
-            --output results/pilot_case_validation.json
+          model="$(python tools/select_gemini_model.py --preferred "${REQUESTED_GEMINI_MODEL}")"
+          echo "Selected model: ${model}"
+          echo "GEMINI_MODEL=${model}" >> "${GITHUB_ENV}"
 
-      - name: Build secret-free pilot configuration
+      - name: Build secret-free smoke configuration
+        run: python tools/prepare_gemini_smoke.py
+
+      - name: Run one Gemini call on Reddit
+        shell: bash
+        run: |
+          mkdir -p results/provider_smoke
+          PYTHONPATH=src python -m evisuff.experiment_cli run-one \
+            configs/gemini_smoke.local.json \
+            --case-index 0 \
+            --system-index 0 \
+            --condition generalist \
+            --repetition 0 \
+            --output-root results/provider_smoke \
+            --overwrite | tee results/provider_smoke/console_report.json
+
+      - name: Show and validate safe score summary
         shell: bash
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
 
-          config = {
-              "experiment_id": "gemini-rubrik-coreweave-pilot-v1",
-              "cases": [
-                  "../data/ipo_real_cases/rubrik_2024/spec.json",
-                  "../data/ipo_real_cases/coreweave_2025/spec.json",
-              ],
-              "conditions": ["isolated", "generalist", "multi_agent"],
-              "repetitions": 1,
-              "output_root": "../results/gemini_two_case_pilot",
-              "systems": [
-                  {
-                      "system_id": "gemini-gemini-3.6-flash",
-                      "enabled": True,
-                      "backend": {
-                          "type": "command",
-                          "command": [
-                              "python",
-                              "tools/gemini_structured_agent.py",
-                          ],
-                          "timeout_seconds": 600,
-                      },
-                      "pricing_usd_per_million_tokens": {
-                          "input": 0.0,
-                          "output": 0.0,
-                      },
-                  }
-              ],
-          }
-          path = Path("configs/gemini_two_case_pilot.local.json")
-          path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
-          print("Planned calls: 18 (2 cases x [4 isolated + 1 generalist + 4 multi-agent])")
-          print("No API secret was written to the configuration.")
-          PY
-
-      - name: Run the 18-call pilot
-        shell: bash
-        run: |
-          mkdir -p results/gemini_two_case_pilot
-          PYTHONPATH=src python -m evisuff.experiment_cli run \
-            configs/gemini_two_case_pilot.local.json \
-            --output-root results/gemini_two_case_pilot \
-            --overwrite | tee results/gemini_two_case_pilot/console_summary.json
-
-      - name: Validate and print pilot summary
-        shell: bash
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-
-          path = Path("results/gemini_two_case_pilot/experiment_summary.json")
-          summary = json.loads(path.read_text(encoding="utf-8"))
-          reports = summary.get("reports", [])
-          if len(reports) != 6:
-              raise SystemExit(f"Expected 6 workflow reports, found {len(reports)}")
-
-          compact = []
-          failed = []
-          for report in reports:
-              row = {
-                  "workflow_id": report.get("workflow_id"),
-                  "condition": report.get("condition"),
-                  "status": report.get("status"),
-                  "component_score": report.get("component_score"),
-                  "coordination_score": report.get("coordination_score"),
-                  "workflow_score": report.get("workflow_score"),
-                  "composition_gap": report.get("composition_gap"),
-                  "enterprise_success": report.get("enterprise_success"),
-                  "input_tokens": report.get("total_input_tokens"),
-                  "output_tokens": report.get("total_output_tokens"),
-                  "error": report.get("error"),
-              }
-              compact.append(row)
-              if report.get("status") != "completed":
-                  failed.append(row)
-
-          safe_summary = {
-              "result_type": "two_case_single_repetition_pilot_not_final_paper_results",
-              "model": "gemini-3.6-flash",
-              "planned_api_calls": 18,
-              "workflow_runs": compact,
-              "aggregate_groups": summary.get("groups", []),
-          }
-          Path("results/gemini_two_case_pilot/safe_summary.json").write_text(
-              json.dumps(safe_summary, indent=2) + "\n",
-              encoding="utf-8",
+          scores = list(Path("results/provider_smoke").glob("**/score.json"))
+          if not scores:
+              raise SystemExit("No score.json was produced")
+          report = json.loads(scores[0].read_text(encoding="utf-8"))
+          safe_keys = (
+              "system_id",
+              "condition",
+              "status",
+              "component_score",
+              "coordination_score",
+              "workflow_score",
+              "composition_gap",
+              "enterprise_success",
+              "total_input_tokens",
+              "total_output_tokens",
+              "estimated_cost_usd",
+              "error",
           )
-          print(json.dumps(safe_summary, indent=2))
-          if failed:
-              raise SystemExit(f"{len(failed)} pilot workflow run(s) failed")
+          print(json.dumps({key: report.get(key) for key in safe_keys}, indent=2))
+          if report.get("status") != "completed":
+              raise SystemExit("Gemini returned a workflow result that could not be scored")
           PY
 
-      - name: Upload complete pilot artifact
+      - name: Upload smoke-test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gemini-two-case-pilot-${{ github.run_id }}
+          name: gemini-provider-smoke-${{ github.run_id }}
           path: |
-            results/gemini_two_case_pilot/
-            results/pilot_case_validation.json
-            configs/gemini_two_case_pilot.local.json
+            results/provider_smoke/
+            configs/gemini_smoke.local.json
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 14
