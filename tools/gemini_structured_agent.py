@@ -23,6 +23,8 @@ METRIC_FIELDS = (
     "dilution_pct",
 )
 DEPARTMENTS = ("diligence", "valuation", "risk", "memo")
+SOURCE_VERSIONS = ("v1", "v2")
+SCENARIOS = ("base_case",)
 
 
 def closed_object(
@@ -40,12 +42,14 @@ def department_schemas() -> dict[str, dict[str, Any]]:
     numeric_facts = {key: {"type": "number"} for key in FACT_FIELDS}
     metrics = {key: {"type": "number"} for key in METRIC_FIELDS}
     citations = {key: {"type": "string"} for key in FACT_FIELDS}
+    source_version = {"type": "string", "enum": list(SOURCE_VERSIONS)}
+    scenario_id = {"type": "string", "enum": list(SCENARIOS)}
 
     diligence = closed_object(
         {
             "department": {"type": "string", "enum": ["due_diligence"]},
-            "source_version": {"type": "string"},
-            "scenario_id": {"type": "string"},
+            "source_version": source_version,
+            "scenario_id": scenario_id,
             "facts": closed_object(numeric_facts, FACT_FIELDS),
             "citations": closed_object(citations, FACT_FIELDS),
         },
@@ -54,8 +58,8 @@ def department_schemas() -> dict[str, dict[str, Any]]:
     valuation = closed_object(
         {
             "department": {"type": "string", "enum": ["valuation"]},
-            "source_version": {"type": "string"},
-            "scenario_id": {"type": "string"},
+            "source_version": source_version,
+            "scenario_id": scenario_id,
             "inputs": closed_object(numeric_facts, FACT_FIELDS),
             "outputs": closed_object(metrics, METRIC_FIELDS),
         },
@@ -64,8 +68,8 @@ def department_schemas() -> dict[str, dict[str, Any]]:
     risk = closed_object(
         {
             "department": {"type": "string", "enum": ["risk"]},
-            "source_version": {"type": "string"},
-            "scenario_id": {"type": "string"},
+            "source_version": source_version,
+            "scenario_id": scenario_id,
             "risk_flags": {
                 "type": "array",
                 "items": {"type": "string"},
@@ -76,8 +80,8 @@ def department_schemas() -> dict[str, dict[str, Any]]:
     memo = closed_object(
         {
             "department": {"type": "string", "enum": ["ecm_committee"]},
-            "source_version": {"type": "string"},
-            "scenario_id": {"type": "string"},
+            "source_version": source_version,
+            "scenario_id": scenario_id,
             "headline_metrics": closed_object(metrics, METRIC_FIELDS),
             "top_risks": {
                 "type": "array",
@@ -264,6 +268,8 @@ def self_test() -> None:
     for name, schema in schemas.items():
         assert schema["additionalProperties"] is False
         assert schema["type"] == "object"
+        assert schema["properties"]["source_version"]["enum"] == list(SOURCE_VERSIONS)
+        assert schema["properties"]["scenario_id"]["enum"] == list(SCENARIOS)
         assert response_format(name)["json_schema"]["strict"] is True
 
 
