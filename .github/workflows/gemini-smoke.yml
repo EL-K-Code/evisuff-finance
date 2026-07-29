@@ -116,6 +116,97 @@ jobs:
           import os
           from pathlib import Path
 
+          numeric_facts = {
+              key: {"type": "number"}
+              for key in (
+                  "price_per_share_usd",
+                  "primary_shares_m",
+                  "existing_shares_m",
+                  "debt_usd_m",
+                  "cash_usd_m",
+              )
+          }
+          metric_fields = {
+              key: {"type": "number"}
+              for key in (
+                  "gross_proceeds_usd_m",
+                  "post_money_equity_value_usd_m",
+                  "net_debt_usd_m",
+                  "dilution_pct",
+              )
+          }
+          citation_fields = {key: {"type": "string"} for key in numeric_facts}
+
+          def closed_object(properties, required):
+              return {
+                  "type": "object",
+                  "properties": properties,
+                  "required": list(required),
+                  "additionalProperties": False,
+              }
+
+          diligence = closed_object(
+              {
+                  "department": {"type": "string", "enum": ["due_diligence"]},
+                  "source_version": {"type": "string"},
+                  "scenario_id": {"type": "string"},
+                  "facts": closed_object(numeric_facts, numeric_facts),
+                  "citations": closed_object(citation_fields, citation_fields),
+              },
+              ("department", "source_version", "scenario_id", "facts", "citations"),
+          )
+          valuation = closed_object(
+              {
+                  "department": {"type": "string", "enum": ["valuation"]},
+                  "source_version": {"type": "string"},
+                  "scenario_id": {"type": "string"},
+                  "inputs": closed_object(numeric_facts, numeric_facts),
+                  "outputs": closed_object(metric_fields, metric_fields),
+              },
+              ("department", "source_version", "scenario_id", "inputs", "outputs"),
+          )
+          risk = closed_object(
+              {
+                  "department": {"type": "string", "enum": ["risk"]},
+                  "source_version": {"type": "string"},
+                  "scenario_id": {"type": "string"},
+                  "risk_flags": {"type": "array", "items": {"type": "string"}},
+              },
+              ("department", "source_version", "scenario_id", "risk_flags"),
+          )
+          memo = closed_object(
+              {
+                  "department": {"type": "string", "enum": ["ecm_committee"]},
+                  "source_version": {"type": "string"},
+                  "scenario_id": {"type": "string"},
+                  "headline_metrics": closed_object(metric_fields, metric_fields),
+                  "top_risks": {"type": "array", "items": {"type": "string"}},
+                  "citations": {"type": "array", "items": {"type": "string"}},
+                  "recommendation": {
+                      "type": "string",
+                      "enum": ["proceed", "proceed_with_conditions", "do_not_proceed"],
+                  },
+              },
+              (
+                  "department",
+                  "source_version",
+                  "scenario_id",
+                  "headline_metrics",
+                  "top_risks",
+                  "citations",
+                  "recommendation",
+              ),
+          )
+          workflow_schema = closed_object(
+              {
+                  "diligence": diligence,
+                  "valuation": valuation,
+                  "risk": risk,
+                  "memo": memo,
+              },
+              ("diligence", "valuation", "risk", "memo"),
+          )
+
           config = {
               "experiment_id": "gemini-ipo-workflow-smoke-v1",
               "cases": ["../data/ipo_real_cases/reddit_2024/spec.json"],
@@ -124,7 +215,7 @@ jobs:
               "output_root": "../results/provider_smoke",
               "systems": [
                   {
-                      "system_id": f"gemini::{os.environ['GEMINI_MODEL']}",
+                      "system_id": f"gemini-{os.environ['GEMINI_MODEL']}",
                       "enabled": True,
                       "backend": {
                           "type": "openai_compatible",
@@ -135,7 +226,18 @@ jobs:
                           "max_tokens": 4096,
                           "timeout_seconds": 300,
                           "max_retries": 3,
-                          "use_json_response_format": True,
+                          "use_json_response_format": False,
+                          "extra_body": {
+                              "reasoning_effort": "low",
+                              "response_format": {
+                                  "type": "json_schema",
+                                  "json_schema": {
+                                      "name": "ipo_workflow_artifacts",
+                                      "strict": True,
+                                      "schema": workflow_schema,
+                                  },
+                              },
+                          },
                       },
                       "pricing_usd_per_million_tokens": {
                           "input": 0.0,
@@ -146,7 +248,7 @@ jobs:
           }
           path = Path("configs/gemini_smoke.local.json")
           path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
-          print(f"Prepared {path} for one model call; no secret was written.")
+          print(f"Prepared {path} with a strict JSON schema; no secret was written.")
           PY
 
       - name: Run one Gemini call on Reddit
@@ -162,8 +264,7 @@ jobs:
             --output-root results/provider_smoke \
             --overwrite | tee results/provider_smoke/console_report.json
 
-      - name: Show safe score summary
-        if: always()
+      - name: Show and validate safe score summary
         shell: bash
         run: |
           python - <<'PY'
@@ -172,8 +273,7 @@ jobs:
 
           scores = list(Path("results/provider_smoke").glob("**/score.json"))
           if not scores:
-              print("No score.json was produced.")
-              raise SystemExit(0)
+              raise SystemExit("No score.json was produced")
           report = json.loads(scores[0].read_text(encoding="utf-8"))
           safe_keys = (
               "system_id",
@@ -190,6 +290,8 @@ jobs:
               "error",
           )
           print(json.dumps({key: report.get(key) for key in safe_keys}, indent=2))
+          if report.get("status") != "completed":
+              raise SystemExit("Gemini returned a workflow result that could not be scored")
           PY
 
       - name: Upload smoke-test results
