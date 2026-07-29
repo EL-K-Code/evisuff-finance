@@ -6,11 +6,11 @@ on:
       case:
         description: IPO case to evaluate
         required: true
-        default: coreweave
+        default: reddit
         type: choice
         options:
-          - coreweave
           - reddit
+          - coreweave
           - rubrik
       condition:
         description: Stateful orchestration condition
