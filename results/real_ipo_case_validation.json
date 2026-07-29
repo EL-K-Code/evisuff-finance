@@ -7,10 +7,12 @@
         "price_per_share_usd",
         "primary_shares_m"
       ],
-      "changed_risks": [],
+      "changed_risks": [
+        "ftc_data_licensing_inquiry"
+      ],
       "documents": 3,
       "errors": [],
-      "evidence_items": 16,
+      "evidence_items": 17,
       "issuer": "Reddit, Inc.",
       "source_versions": 2,
       "ticker": "RDDT",
@@ -53,7 +55,7 @@
   "dataset_id": "ipo-real-cases-v1",
   "document_count": 8,
   "errors": [],
-  "evidence_item_count": 52,
+  "evidence_item_count": 53,
   "result_type": "real_ipo_case_validation_not_model_results",
   "valid": true
 }
