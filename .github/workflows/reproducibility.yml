@@ -1,0 +1,273 @@
+name: reproducibility-checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: python -m pip install --upgrade pip && python -m pip install -e .
+      - name: Run unit tests
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+      - name: Validate public fixture
+        run: PYTHONPATH=src python -m evisuff.cli validate data/example_annotations.jsonl
+      - name: Run deterministic smoke test
+        run: PYTHONPATH=src python -m evisuff.cli smoke --output results/smoke_metrics.json
+      - name: Run IPO workflow pilot
+        run: make workflow-pilot
+      - name: Verify committed pilot result
+        run: git diff --exit-code -- results/ipo_workflow_pilot.json
+      - name: Validate real SEC IPO cases
+        run: make real-case-validate
+      - name: Verify committed real-case validation
+        run: git diff --exit-code -- results/real_ipo_case_validation.json
+      - name: Run empirical-runner tests
+        run: make experiment-test
+      - name: Verify command-backend privacy
+        run: make privacy-test
+      - name: Test hosted-provider adapters and secure config preparation
+        run: make provider-test
+      - name: Run offline real-case matrix
+        run: make empirical-dry-run
+      - name: Run stateful amendment controls
+        run: make staged-dry-run
+
+  openrouter-multicase-replication:
+    name: OpenRouter Rubrik and CoreWeave multi-agent
+    if: contains(github.event.pull_request.title, '[RUN OR MULTICASE]')
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    concurrency:
+      group: openrouter-rubrik-coreweave-multiagent-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_API_BASE: https://openrouter.ai/api/v1
+      OPENROUTER_MODEL: openai/gpt-oss-20b:free
+      OPENROUTER_MAX_RETRIES: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify secret, model and zero-retry budget
+        shell: bash
+        run: |
+          if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+            echo "Missing repository secret OPENROUTER_API_KEY" >&2
+            exit 1
+          fi
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          request = urllib.request.Request(
+              "https://openrouter.ai/api/v1/models",
+              headers={
+                  "Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}",
+                  "Accept": "application/json",
+              },
+          )
+          with urllib.request.urlopen(request, timeout=60) as response:
+              payload = json.loads(response.read().decode("utf-8"))
+          available = {
+              str(item.get("id", ""))
+              for item in payload.get("data", [])
+              if isinstance(item, dict)
+          }
+          model = os.environ["OPENROUTER_MODEL"]
+          if model not in available:
+              raise SystemExit(f"Required OpenRouter model is unavailable: {model}")
+          if os.environ.get("OPENROUTER_MAX_RETRIES") != "0":
+              raise SystemExit("Replication must use exactly zero hidden retries")
+          print(f"Frozen OpenRouter model: {model}")
+          print("Hidden retries: 0")
+          print("Planned inference calls: 16")
+          PY
+
+      - name: Install and validate frozen benchmark
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python tools/openrouter_structured_agent.py --self-test
+          PYTHONPATH=src python -m unittest \
+            tests.test_gemini_structured_agent \
+            tests.test_openrouter_structured_agent \
+            tests.test_staged_workflow \
+            tests.test_workflow_scoring_contract -v
+
+      - name: Build two secret-free multi-agent configurations
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          cases = (
+              ("coreweave", "../data/ipo_real_cases/coreweave_2025/spec.json"),
+              ("rubrik", "../data/ipo_real_cases/rubrik_2024/spec.json"),
+          )
+          for case_name, case_path in cases:
+              config = {
+                  "experiment_id": f"openrouter-{case_name}-staged-multi-agent-replication-v1",
+                  "cases": [case_path],
+                  "conditions": ["staged_multi_agent"],
+                  "repetitions": 1,
+                  "output_root": f"../results/openrouter_{case_name}_multi_agent",
+                  "systems": [
+                      {
+                          "system_id": "openrouter-openai-gpt-oss-20b-free",
+                          "enabled": True,
+                          "backend": {
+                              "type": "command",
+                              "command": ["python", "tools/openrouter_structured_agent.py"],
+                              "timeout_seconds": 600,
+                          },
+                          "pricing_usd_per_million_tokens": {
+                              "input": 0.0,
+                              "output": 0.0,
+                          },
+                      }
+                  ],
+              }
+              path = Path(f"configs/openrouter_{case_name}_multi_agent.local.json")
+              path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+              print(f"Prepared {case_name}: 8 planned calls")
+          print("No API credential was written to either configuration.")
+          PY
+
+      - name: Run CoreWeave staged multi-agent — 8 calls
+        shell: bash
+        run: |
+          set +e
+          mkdir -p results/openrouter_coreweave_multi_agent
+          PYTHONPATH=src python -m evisuff.staged_cli run \
+            configs/openrouter_coreweave_multi_agent.local.json \
+            --output-root results/openrouter_coreweave_multi_agent \
+            --overwrite | tee results/openrouter_coreweave_multi_agent/console_summary.json
+          code=${PIPESTATUS[0]}
+          echo "${code}" > results/openrouter_coreweave_multi_agent/exit_code.txt
+          exit 0
+
+      - name: Cool down provider routing
+        run: sleep 60
+
+      - name: Run Rubrik staged multi-agent — 8 calls
+        shell: bash
+        run: |
+          set +e
+          mkdir -p results/openrouter_rubrik_multi_agent
+          PYTHONPATH=src python -m evisuff.staged_cli run \
+            configs/openrouter_rubrik_multi_agent.local.json \
+            --output-root results/openrouter_rubrik_multi_agent \
+            --overwrite | tee results/openrouter_rubrik_multi_agent/console_summary.json
+          code=${PIPESTATUS[0]}
+          echo "${code}" > results/openrouter_rubrik_multi_agent/exit_code.txt
+          exit 0
+
+      - name: Build safe replication summary
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          rows = []
+          for case_name in ("coreweave", "rubrik"):
+              root = Path(f"results/openrouter_{case_name}_multi_agent")
+              summary_path = root / "experiment_summary.json"
+              exit_path = root / "exit_code.txt"
+              exit_code = int(exit_path.read_text().strip()) if exit_path.exists() else None
+              if not summary_path.exists():
+                  rows.append({
+                      "case": case_name,
+                      "condition": "staged_multi_agent",
+                      "status": "not_evaluated",
+                      "reportable": False,
+                      "reason": "missing_experiment_summary",
+                      "exit_code": exit_code,
+                  })
+                  continue
+              summary = json.loads(summary_path.read_text(encoding="utf-8"))
+              reports = summary.get("reports", [])
+              if len(reports) != 1:
+                  rows.append({
+                      "case": case_name,
+                      "condition": "staged_multi_agent",
+                      "status": "not_evaluated",
+                      "reportable": False,
+                      "reason": "invalid_report_count",
+                      "report_count": len(reports),
+                      "exit_code": exit_code,
+                  })
+                  continue
+              report = reports[0]
+              completed = report.get("status") == "completed"
+              rows.append({
+                  "case": case_name,
+                  "condition": "staged_multi_agent",
+                  "status": report.get("status"),
+                  "reportable": completed,
+                  "initial_version": report.get("initial_version") if completed else None,
+                  "final_version": report.get("final_version") if completed else None,
+                  "round1_workflow_score": report.get("round1_workflow_score") if completed else None,
+                  "workflow_score": report.get("workflow_score") if completed else None,
+                  "component_score": report.get("component_score") if completed else None,
+                  "coordination_score": report.get("coordination_score") if completed else None,
+                  "composition_gap": report.get("composition_gap") if completed else None,
+                  "enterprise_success": report.get("enterprise_success") if completed else None,
+                  "update_success": report.get("update_success") if completed else None,
+                  "stale_artifacts_after_update": report.get("stale_artifacts_after_update") if completed else None,
+                  "artifact_changed_after_update": report.get("artifact_changed_after_update") if completed else None,
+                  "call_count": report.get("call_count") if completed else None,
+                  "planned_calls": 8,
+                  "input_tokens": report.get("total_input_tokens") if completed else None,
+                  "output_tokens": report.get("total_output_tokens") if completed else None,
+                  "estimated_cost_usd": report.get("estimated_cost_usd") if completed else None,
+                  "error": report.get("error"),
+                  "exit_code": exit_code,
+              })
+
+          safe = {
+              "result_type": "openrouter_single_model_two_case_multi_agent_replication_not_final_paper_results",
+              "model": "openai/gpt-oss-20b:free",
+              "conditions": ["staged_multi_agent"],
+              "planned_calls": 16,
+              "hidden_retries": 0,
+              "workflow_runs": rows,
+          }
+          output = Path("results/openrouter_multicase_multi_agent_replication.json")
+          output.write_text(json.dumps(safe, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(safe, indent=2))
+          if not all(row.get("reportable") for row in rows):
+              raise SystemExit("At least one case was not evaluable")
+          PY
+
+      - name: Upload complete multi-case replication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openrouter-multicase-multi-agent-${{ github.run_id }}
+          path: |
+            results/openrouter_coreweave_multi_agent/
+            results/openrouter_rubrik_multi_agent/
+            results/openrouter_multicase_multi_agent_replication.json
+            configs/openrouter_coreweave_multi_agent.local.json
+            configs/openrouter_rubrik_multi_agent.local.json
+          if-no-files-found: warn
+          retention-days: 30
