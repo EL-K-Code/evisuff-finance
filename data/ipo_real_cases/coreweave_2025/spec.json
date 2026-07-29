@@ -61,18 +61,22 @@
           },
           {
             "evidence_id": "risk_customer",
+            "risk_id": "customer_concentration",
             "text": "A substantial portion of revenue depended on a small number of customers."
           },
           {
             "evidence_id": "risk_debt",
+            "risk_id": "high_leverage",
             "text": "CoreWeave carried substantial leverage and significant debt-service obligations."
           },
           {
             "evidence_id": "risk_supplier",
+            "risk_id": "gpu_supplier_dependency",
             "text": "The business depended heavily on access to advanced GPUs and a concentrated supplier ecosystem."
           },
           {
             "evidence_id": "risk_control",
+            "risk_id": "dual_class_control",
             "text": "Founders retained concentrated voting control through the multi-class structure."
           }
         ]
@@ -111,18 +115,22 @@
           },
           {
             "evidence_id": "risk_customer",
+            "risk_id": "customer_concentration",
             "text": "A substantial portion of revenue depended on a small number of customers."
           },
           {
             "evidence_id": "risk_debt",
+            "risk_id": "high_leverage",
             "text": "CoreWeave carried substantial leverage and significant debt-service obligations."
           },
           {
             "evidence_id": "risk_supplier",
+            "risk_id": "gpu_supplier_dependency",
             "text": "The business depended heavily on access to advanced GPUs and a concentrated supplier ecosystem."
           },
           {
             "evidence_id": "risk_control",
+            "risk_id": "dual_class_control",
             "text": "Founders retained concentrated voting control through the multi-class structure."
           }
         ]
