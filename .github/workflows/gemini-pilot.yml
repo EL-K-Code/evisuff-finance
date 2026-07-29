@@ -26,6 +26,11 @@ on:
         required: true
         default: gemini-3.6-flash
         type: string
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/gemini-pilot.yml
 
 permissions:
   contents: read
@@ -42,9 +47,9 @@ jobs:
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_API_BASE: https://generativelanguage.googleapis.com/v1beta/openai
-      REQUESTED_GEMINI_MODEL: ${{ inputs.model }}
-      PILOT_CASE: ${{ inputs.case }}
-      PILOT_CONDITION: ${{ inputs.condition }}
+      REQUESTED_GEMINI_MODEL: ${{ inputs.model || 'gemini-3.6-flash' }}
+      PILOT_CASE: ${{ inputs.case || 'reddit' }}
+      PILOT_CONDITION: ${{ inputs.condition || 'staged_generalist' }}
 
     steps:
       - name: Check out benchmark branch
