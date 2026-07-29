@@ -24,7 +24,7 @@ on:
       model:
         description: Exact OpenRouter free model identifier
         required: true
-        default: openai/gpt-oss-120b:free
+        default: openai/gpt-oss-20b:free
         type: string
 
 permissions:
