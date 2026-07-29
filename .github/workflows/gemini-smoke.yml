@@ -70,12 +70,17 @@ jobs:
           with urllib.request.urlopen(request, timeout=60) as response:
               payload = json.loads(response.read().decode("utf-8"))
 
-          available = sorted(
-              item.get("id")
-              for item in payload.get("data", [])
-              if isinstance(item, dict) and isinstance(item.get("id"), str)
-          )
-          requested = os.environ.get("REQUESTED_GEMINI_MODEL", "").strip()
+          rows = payload.get("data", payload.get("models", []))
+          available = []
+          for item in rows if isinstance(rows, list) else []:
+              if not isinstance(item, dict):
+                  continue
+              value = item.get("id", item.get("name"))
+              if isinstance(value, str) and value:
+                  available.append(value.removeprefix("models/"))
+          available = sorted(set(available))
+
+          requested = os.environ.get("REQUESTED_GEMINI_MODEL", "").strip().removeprefix("models/")
           priorities = [
               requested,
               "gemini-3.6-flash",
@@ -95,7 +100,8 @@ jobs:
                   None,
               )
           if chosen is None:
-              raise SystemExit("No compatible Gemini Flash model is available for this API key")
+              preview = ", ".join(available[:20]) or "<empty model list>"
+              raise SystemExit(f"No compatible Gemini Flash model found. Available IDs: {preview}")
 
           print(f"Selected model: {chosen}")
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as handle:
