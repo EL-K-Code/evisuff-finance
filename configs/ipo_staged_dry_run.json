@@ -1,0 +1,41 @@
+{
+  "experiment_id": "ipo-staged-amendment-dry-run-v1",
+  "cases": [
+    "../data/ipo_real_cases/reddit_2024/spec.json",
+    "../data/ipo_real_cases/rubrik_2024/spec.json",
+    "../data/ipo_real_cases/coreweave_2025/spec.json"
+  ],
+  "conditions": [
+    "staged_isolated",
+    "staged_generalist",
+    "staged_multi_agent"
+  ],
+  "repetitions": 1,
+  "output_root": "../results/staged_dry_run",
+  "systems": [
+    {
+      "system_id": "staged-oracle-control",
+      "enabled": true,
+      "backend": {
+        "type": "staged_deterministic_control",
+        "mode": "oracle"
+      },
+      "pricing_usd_per_million_tokens": {
+        "input": 0.0,
+        "output": 0.0
+      }
+    },
+    {
+      "system_id": "staged-ignore-update-control",
+      "enabled": true,
+      "backend": {
+        "type": "staged_deterministic_control",
+        "mode": "ignore_update"
+      },
+      "pricing_usd_per_million_tokens": {
+        "input": 0.0,
+        "output": 0.0
+      }
+    }
+  ]
+}
