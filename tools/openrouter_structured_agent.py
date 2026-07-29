@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -10,9 +11,9 @@ import urllib.request
 from typing import Any
 
 try:
-    from tools.gemini_structured_agent import response_format
+    from tools.gemini_structured_agent import response_format, response_schema
 except ModuleNotFoundError:  # Direct execution from tools/
-    from gemini_structured_agent import response_format
+    from gemini_structured_agent import response_format, response_schema
 
 
 def _request_json(
@@ -76,10 +77,57 @@ def _extract_content(raw: dict[str, Any]) -> str:
     return content
 
 
+def _candidate_texts(content: str) -> list[str]:
+    text = content.strip()
+    candidates = [text]
+
+    harmony_marker = "<|channel|>final<|message|>"
+    if harmony_marker in text:
+        candidates.insert(0, text.split(harmony_marker, 1)[1].strip())
+
+    fenced = re.findall(r"```(?:json)?\s*(.*?)```", text, flags=re.DOTALL | re.IGNORECASE)
+    candidates.extend(block.strip() for block in fenced if block.strip())
+
+    decoder = json.JSONDecoder()
+    for source in list(candidates):
+        for match in re.finditer(r"\{", source):
+            try:
+                _, end = decoder.raw_decode(source[match.start() :])
+            except json.JSONDecodeError:
+                continue
+            candidates.append(source[match.start() : match.start() + end])
+
+    unique: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        normalized = candidate.strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            unique.append(normalized)
+    return unique
+
+
+def _parse_structured_content(content: str, department: str | None) -> dict[str, Any]:
+    expected_keys = set(response_schema(department)["required"])
+    parse_errors: list[str] = []
+    for candidate in _candidate_texts(content):
+        try:
+            parsed = json.loads(candidate)
+        except json.JSONDecodeError as exc:
+            parse_errors.append(str(exc))
+            continue
+        if not isinstance(parsed, dict):
+            continue
+        if expected_keys.issubset(parsed):
+            return parsed
+    detail = parse_errors[-1] if parse_errors else "no JSON object candidate found"
+    raise ValueError(f"OpenRouter response did not contain the required JSON object: {detail}")
+
+
 def run_agent(request_payload: dict[str, Any]) -> dict[str, Any]:
     api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     model = os.getenv(
-        "OPENROUTER_MODEL", "openai/gpt-oss-120b:free"
+        "OPENROUTER_MODEL", "openai/gpt-oss-20b:free"
     ).strip()
     base_url = os.getenv(
         "OPENROUTER_API_BASE", "https://openrouter.ai/api/v1"
@@ -113,6 +161,10 @@ def run_agent(request_payload: dict[str, Any]) -> dict[str, Any]:
         "temperature": 0.0,
         "max_tokens": 4096,
         "response_format": response_format(department),
+        "provider": {
+            "require_parameters": True,
+            "allow_fallbacks": True,
+        },
     }
     raw = _request_json(
         f"{base_url}/chat/completions",
@@ -120,9 +172,7 @@ def run_agent(request_payload: dict[str, Any]) -> dict[str, Any]:
         body,
     )
     content = _extract_content(raw)
-    parsed = json.loads(content)
-    if not isinstance(parsed, dict):
-        raise ValueError("OpenRouter structured response must be a JSON object")
+    parsed = _parse_structured_content(content, department)
 
     usage = raw.get("usage", {})
     if not isinstance(usage, dict):
@@ -132,7 +182,7 @@ def run_agent(request_payload: dict[str, Any]) -> dict[str, Any]:
     if isinstance(choices, list) and choices and isinstance(choices[0], dict):
         finish_reason = choices[0].get("finish_reason")
     return {
-        "content": content,
+        "content": json.dumps(parsed, ensure_ascii=False),
         "parsed": parsed,
         "input_tokens": int(usage.get("prompt_tokens", 0) or 0),
         "output_tokens": int(usage.get("completion_tokens", 0) or 0),
@@ -151,6 +201,14 @@ def run_agent(request_payload: dict[str, Any]) -> dict[str, Any]:
 def self_test() -> None:
     assert response_format(None)["type"] == "json_schema"
     assert response_format("risk")["json_schema"]["strict"] is True
+    sample = {
+        "department": "risk",
+        "source_version": "v2",
+        "scenario_id": "base_case",
+        "risk_flags": ["example"],
+    }
+    fenced = "```json\n" + json.dumps(sample) + "\n```"
+    assert _parse_structured_content(fenced, "risk") == sample
 
 
 def main() -> None:
