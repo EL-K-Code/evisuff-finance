@@ -1,29 +1,50 @@
-name: Gemini Reddit stateful architecture comparison
+name: Gemini stateful amendment pilot
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/gemini-pilot.yml
+    inputs:
+      case:
+        description: IPO case to evaluate
+        required: true
+        default: reddit
+        type: choice
+        options:
+          - reddit
+          - coreweave
+          - rubrik
+      condition:
+        description: Stateful orchestration condition
+        required: true
+        default: staged_isolated
+        type: choice
+        options:
+          - staged_isolated
+          - staged_multi_agent
+          - staged_generalist
+      model:
+        description: Exact Gemini model identifier
+        required: true
+        default: gemini-3.6-flash
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: gemini-reddit-stateful-architecture-comparison
+  group: gemini-stateful-amendment-pilot
   cancel-in-progress: false
 
 jobs:
   pilot:
-    name: Reddit isolated then multi-agent
+    name: Stateful IPO amendment evaluation
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_API_BASE: https://generativelanguage.googleapis.com/v1beta/openai
-      GEMINI_MODEL: gemini-3.6-flash
+      REQUESTED_GEMINI_MODEL: ${{ inputs.model }}
+      PILOT_CASE: ${{ inputs.case }}
+      PILOT_CONDITION: ${{ inputs.condition }}
 
     steps:
       - name: Check out benchmark branch
@@ -41,12 +62,13 @@ jobs:
             echo "Missing repository secret GEMINI_API_KEY" >&2
             exit 1
           fi
-          selected="$(python tools/select_gemini_model.py --preferred "${GEMINI_MODEL}")"
-          if [ "${selected}" != "${GEMINI_MODEL}" ]; then
-            echo "Required frozen model is unavailable: ${GEMINI_MODEL}" >&2
+          selected="$(python tools/select_gemini_model.py --preferred "${REQUESTED_GEMINI_MODEL}")"
+          if [ "${selected}" != "${REQUESTED_GEMINI_MODEL}" ]; then
+            echo "Requested frozen model is unavailable: ${REQUESTED_GEMINI_MODEL}" >&2
             echo "Model selector returned: ${selected}" >&2
             exit 1
           fi
+          echo "GEMINI_MODEL=${selected}" >> "${GITHUB_ENV}"
           echo "Frozen model: ${selected}"
 
       - name: Install and validate stateful benchmark
@@ -62,23 +84,40 @@ jobs:
             data/ipo_real_cases/index.json \
             --output results/stateful_case_validation.json
 
-      - name: Build secret-free comparison configurations
+      - name: Build secret-free stateful configuration
         shell: bash
         run: |
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
 
-          base = {
-              "cases": ["../data/ipo_real_cases/reddit_2024/spec.json"],
+          cases = {
+              "reddit": "../data/ipo_real_cases/reddit_2024/spec.json",
+              "rubrik": "../data/ipo_real_cases/rubrik_2024/spec.json",
+              "coreweave": "../data/ipo_real_cases/coreweave_2025/spec.json",
+          }
+          condition = os.environ["PILOT_CONDITION"]
+          planned_calls = 2 if condition == "staged_generalist" else 8
+          config = {
+              "experiment_id": (
+                  f"gemini-stateful-{os.environ['PILOT_CASE']}-"
+                  f"{condition}-pilot-v1"
+              ),
+              "cases": [cases[os.environ["PILOT_CASE"]]],
+              "conditions": [condition],
               "repetitions": 1,
+              "output_root": "../results/gemini_stateful_pilot",
               "systems": [
                   {
-                      "system_id": "gemini-gemini-3.6-flash",
+                      "system_id": f"gemini-{os.environ['GEMINI_MODEL']}",
                       "enabled": True,
                       "backend": {
                           "type": "command",
-                          "command": ["python", "tools/gemini_structured_agent.py"],
+                          "command": [
+                              "python",
+                              "tools/gemini_structured_agent.py",
+                          ],
                           "timeout_seconds": 600,
                       },
                       "pricing_usd_per_million_tokens": {
@@ -88,138 +127,74 @@ jobs:
                   }
               ],
           }
-
-          rows = (
-              (
-                  "isolated",
-                  "staged_isolated",
-                  "gemini-reddit-staged-isolated-pilot-v1",
-                  "../results/gemini_stateful_reddit_isolated",
-              ),
-              (
-                  "multi_agent",
-                  "staged_multi_agent",
-                  "gemini-reddit-staged-multi-agent-pilot-v1",
-                  "../results/gemini_stateful_reddit_multi_agent",
-              ),
-          )
-          for short_name, condition, experiment_id, output_root in rows:
-              config = dict(base)
-              config.update(
-                  {
-                      "experiment_id": experiment_id,
-                      "conditions": [condition],
-                      "output_root": output_root,
-                  }
-              )
-              path = Path(f"configs/gemini_reddit_{short_name}.local.json")
-              path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
-          print("Planned calls: 16 total (8 isolated + 8 multi-agent).")
-          print("The two conditions run sequentially with a quota-cooling pause.")
-          print("No API secret was written to either configuration.")
+          path = Path("configs/gemini_stateful_pilot.local.json")
+          path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as handle:
+              handle.write(f"PLANNED_CALLS={planned_calls}\n")
+          print(f"Planned calls: {planned_calls}")
+          print("No API secret was written to the configuration.")
           PY
 
-      - name: Run staged isolated — 8 calls
+      - name: Run the stateful pilot
         shell: bash
         run: |
-          mkdir -p results/gemini_stateful_reddit_isolated
+          mkdir -p results/gemini_stateful_pilot
           PYTHONPATH=src python -m evisuff.staged_cli run \
-            configs/gemini_reddit_isolated.local.json \
-            --output-root results/gemini_stateful_reddit_isolated \
-            --overwrite | tee results/gemini_stateful_reddit_isolated/console_summary.json
+            configs/gemini_stateful_pilot.local.json \
+            --output-root results/gemini_stateful_pilot \
+            --overwrite | tee results/gemini_stateful_pilot/console_summary.json
 
-      - name: Cool down free-tier quota
-        shell: bash
-        run: sleep 65
-
-      - name: Run staged multi-agent — 8 calls
-        shell: bash
-        run: |
-          mkdir -p results/gemini_stateful_reddit_multi_agent
-          PYTHONPATH=src python -m evisuff.staged_cli run \
-            configs/gemini_reddit_multi_agent.local.json \
-            --output-root results/gemini_stateful_reddit_multi_agent \
-            --overwrite | tee results/gemini_stateful_reddit_multi_agent/console_summary.json
-
-      - name: Validate and print architecture comparison
-        if: always()
+      - name: Validate and print safe summary
         shell: bash
         run: |
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
 
-          rows = []
-          missing = []
-          for label, root in (
-              ("staged_isolated", Path("results/gemini_stateful_reddit_isolated")),
-              ("staged_multi_agent", Path("results/gemini_stateful_reddit_multi_agent")),
-          ):
-              path = root / "experiment_summary.json"
-              if not path.exists():
-                  missing.append(label)
-                  rows.append({"condition": label, "status": "missing_after_provider_or_workflow_failure"})
-                  continue
-              summary = json.loads(path.read_text(encoding="utf-8"))
-              reports = summary.get("reports", [])
-              if len(reports) != 1:
-                  rows.append({
-                      "condition": label,
-                      "status": "invalid_report_count",
-                      "report_count": len(reports),
-                  })
-                  continue
-              report = reports[0]
-              rows.append(
-                  {
-                      "condition": report.get("condition"),
-                      "status": report.get("status"),
-                      "initial_version": report.get("initial_version"),
-                      "final_version": report.get("final_version"),
-                      "round1_workflow_score": report.get("round1_workflow_score"),
-                      "workflow_score": report.get("workflow_score"),
-                      "component_score": report.get("component_score"),
-                      "coordination_score": report.get("coordination_score"),
-                      "composition_gap": report.get("composition_gap"),
-                      "enterprise_success": report.get("enterprise_success"),
-                      "update_success": report.get("update_success"),
-                      "stale_artifacts_after_update": report.get("stale_artifacts_after_update"),
-                      "artifact_changed_after_update": report.get("artifact_changed_after_update"),
-                      "call_count": report.get("call_count"),
-                      "input_tokens": report.get("total_input_tokens"),
-                      "output_tokens": report.get("total_output_tokens"),
-                      "estimated_cost_usd": report.get("estimated_cost_usd"),
-                      "error": report.get("error"),
-                  }
-              )
-
+          path = Path("results/gemini_stateful_pilot/experiment_summary.json")
+          summary = json.loads(path.read_text(encoding="utf-8"))
+          reports = summary.get("reports", [])
+          if len(reports) != 1:
+              raise SystemExit(f"Expected one workflow report, found {len(reports)}")
+          report = reports[0]
           safe = {
-              "result_type": "single_model_single_case_two_architecture_stateful_pilot_not_final_paper_results",
-              "model": "gemini-3.6-flash",
-              "case": "reddit",
-              "planned_calls": 16,
-              "workflow_runs": rows,
+              "result_type": "single_model_single_case_stateful_pilot_not_final_paper_results",
+              "model": os.environ["GEMINI_MODEL"],
+              "case": os.environ["PILOT_CASE"],
+              "condition": report.get("condition"),
+              "status": report.get("status"),
+              "initial_version": report.get("initial_version"),
+              "final_version": report.get("final_version"),
+              "round1_workflow_score": report.get("round1_workflow_score"),
+              "workflow_score": report.get("workflow_score"),
+              "enterprise_success": report.get("enterprise_success"),
+              "update_success": report.get("update_success"),
+              "stale_artifacts_after_update": report.get("stale_artifacts_after_update"),
+              "call_count": report.get("call_count"),
+              "planned_calls": int(os.environ["PLANNED_CALLS"]),
+              "input_tokens": report.get("total_input_tokens"),
+              "output_tokens": report.get("total_output_tokens"),
+              "estimated_cost_usd": report.get("estimated_cost_usd"),
+              "error": report.get("error"),
           }
-          output = Path("results/gemini_stateful_reddit_architecture_comparison.json")
-          output.write_text(json.dumps(safe, indent=2) + "\n", encoding="utf-8")
+          Path("results/gemini_stateful_pilot/safe_summary.json").write_text(
+              json.dumps(safe, indent=2) + "\n",
+              encoding="utf-8",
+          )
           print(json.dumps(safe, indent=2))
-          if missing:
-              raise SystemExit(f"Missing result(s): {', '.join(missing)}")
-          if any(row.get("status") != "completed" for row in rows):
-              raise SystemExit("At least one architecture run did not complete")
+          if report.get("status") != "completed":
+              raise SystemExit("Stateful model run did not complete")
           PY
 
-      - name: Upload complete architecture comparison
+      - name: Upload stateful pilot artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gemini-reddit-stateful-architectures-${{ github.run_id }}
+          name: gemini-stateful-pilot-${{ github.run_id }}
           path: |
-            results/gemini_stateful_reddit_isolated/
-            results/gemini_stateful_reddit_multi_agent/
-            results/gemini_stateful_reddit_architecture_comparison.json
+            results/gemini_stateful_pilot/
             results/stateful_case_validation.json
-            configs/gemini_reddit_isolated.local.json
-            configs/gemini_reddit_multi_agent.local.json
+            configs/gemini_stateful_pilot.local.json
           if-no-files-found: warn
           retention-days: 30
