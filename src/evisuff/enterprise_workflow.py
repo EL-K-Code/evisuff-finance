@@ -13,7 +13,7 @@ ARTIFACT_FILES = {
     "memo": "memo.json",
 }
 
-# Source facts and cross-department handoffs remain effectively exact. Derived
+# Source facts and direct fact handoffs remain effectively exact. Derived
 # metrics use reporting-scale tolerances because model outputs may round monetary
 # values expressed in USD millions and percentages without changing the economic
 # conclusion. These tolerances must be reported with empirical results.
@@ -122,14 +122,19 @@ def load_run(run_dir: Path) -> dict[str, dict[str, Any]]:
     missing = [name for name in ARTIFACT_FILES.values() if not (run_dir / name).exists()]
     if missing:
         raise FileNotFoundError(f"Missing workflow artifacts in {run_dir}: {missing}")
-    return {key: read_json(run_dir / filename) for key, filename in ARTIFACT_FILES.items()}
+    return {
+        key: read_json(run_dir / filename)
+        for key, filename in ARTIFACT_FILES.items()
+    }
 
 
 def _citation_matches(citation: Any, document_id: str) -> bool:
     return isinstance(citation, str) and citation.startswith(f"{document_id}:")
 
 
-def score_diligence(spec: dict[str, Any], artifact: dict[str, Any]) -> ArtifactScore:
+def score_diligence(
+    spec: dict[str, Any], artifact: dict[str, Any]
+) -> ArtifactScore:
     version_id = str(artifact.get("source_version", ""))
     version = _version(spec, version_id)
     facts = version["facts"]
@@ -138,12 +143,30 @@ def score_diligence(spec: dict[str, Any], artifact: dict[str, Any]) -> ArtifactS
     citations = artifact.get("citations", {})
     checks: list[Check] = []
     for key, expected in facts.items():
-        checks.append(Check(f"diligence.fact.{key}", "diligence", _close(output_facts.get(key), expected), True, f"Fact {key} matches declared source version"))
-        checks.append(Check(f"diligence.citation.{key}", "diligence", _citation_matches(citations.get(key), document_id), True, f"Citation {key} points to declared filing"))
+        checks.append(
+            Check(
+                f"diligence.fact.{key}",
+                "diligence",
+                _close(output_facts.get(key), expected),
+                True,
+                f"Fact {key} matches declared source version",
+            )
+        )
+        checks.append(
+            Check(
+                f"diligence.citation.{key}",
+                "diligence",
+                _citation_matches(citations.get(key), document_id),
+                True,
+                f"Citation {key} points to declared filing",
+            )
+        )
     return ArtifactScore("diligence", _score(checks), checks)
 
 
-def score_valuation(spec: dict[str, Any], artifact: dict[str, Any]) -> ArtifactScore:
+def score_valuation(
+    spec: dict[str, Any], artifact: dict[str, Any]
+) -> ArtifactScore:
     version_id = str(artifact.get("source_version", ""))
     version = _version(spec, version_id)
     facts = version["facts"]
@@ -151,11 +174,41 @@ def score_valuation(spec: dict[str, Any], artifact: dict[str, Any]) -> ArtifactS
     inputs = artifact.get("inputs", {})
     outputs = artifact.get("outputs", {})
     checks: list[Check] = []
-    for key in ("price_per_share_usd", "primary_shares_m", "existing_shares_m", "debt_usd_m", "cash_usd_m"):
-        checks.append(Check(f"valuation.input.{key}", "valuation", _close(inputs.get(key), facts[key]), True, f"Valuation input {key} matches declared source version"))
+    for key in (
+        "price_per_share_usd",
+        "primary_shares_m",
+        "existing_shares_m",
+        "debt_usd_m",
+        "cash_usd_m",
+    ):
+        checks.append(
+            Check(
+                f"valuation.input.{key}",
+                "valuation",
+                _close(inputs.get(key), facts[key]),
+                True,
+                f"Valuation input {key} matches declared source version",
+            )
+        )
     for key, value in expected.items():
-        checks.append(Check(f"valuation.output.{key}", "valuation", _metric_close(key, outputs.get(key), value), True, f"Valuation output {key} is internally correct within its reporting tolerance"))
-    checks.append(Check("valuation.scenario", "valuation", artifact.get("scenario_id") in spec["allowed_scenarios"], True, "Scenario is allowed"))
+        checks.append(
+            Check(
+                f"valuation.output.{key}",
+                "valuation",
+                _metric_close(key, outputs.get(key), value),
+                True,
+                f"Valuation output {key} is internally correct within its reporting tolerance",
+            )
+        )
+    checks.append(
+        Check(
+            "valuation.scenario",
+            "valuation",
+            artifact.get("scenario_id") in spec["allowed_scenarios"],
+            True,
+            "Scenario is allowed",
+        )
+    )
     return ArtifactScore("valuation", _score(checks), checks)
 
 
@@ -165,9 +218,27 @@ def score_risk(spec: dict[str, Any], artifact: dict[str, Any]) -> ArtifactScore:
     expected = set(version["risk_flags"])
     actual = set(artifact.get("risk_flags", []))
     checks = [
-        Check("risk.coverage", "risk", expected.issubset(actual), True, "All risks in declared source version are covered"),
-        Check("risk.no_unsupported", "risk", actual.issubset(expected), True, "No unsupported risk is introduced"),
-        Check("risk.scenario", "risk", artifact.get("scenario_id") in spec["allowed_scenarios"], True, "Scenario is allowed"),
+        Check(
+            "risk.coverage",
+            "risk",
+            expected.issubset(actual),
+            True,
+            "All risks in declared source version are covered",
+        ),
+        Check(
+            "risk.no_unsupported",
+            "risk",
+            actual.issubset(expected),
+            True,
+            "No unsupported risk is introduced",
+        ),
+        Check(
+            "risk.scenario",
+            "risk",
+            artifact.get("scenario_id") in spec["allowed_scenarios"],
+            True,
+            "Scenario is allowed",
+        ),
     ]
     return ArtifactScore("risk", _score(checks), checks)
 
@@ -183,43 +254,141 @@ def score_memo(spec: dict[str, Any], artifact: dict[str, Any]) -> ArtifactScore:
     citations = artifact.get("citations", [])
     checks: list[Check] = []
     for key, expected in expected_metrics.items():
-        checks.append(Check(f"memo.metric.{key}", "memo", _metric_close(key, metrics.get(key), expected), True, f"Memo metric {key} is correct for declared version within its reporting tolerance"))
+        checks.append(
+            Check(
+                f"memo.metric.{key}",
+                "memo",
+                _metric_close(key, metrics.get(key), expected),
+                True,
+                f"Memo metric {key} is correct for declared version within its reporting tolerance",
+            )
+        )
     checks.extend(
         [
-            Check("memo.risks", "memo", expected_risks.issubset(risks), True, "Memo contains all material risks for declared version"),
-            Check("memo.citations", "memo", bool(citations) and all(_citation_matches(item, document_id) for item in citations), True, "Memo citations point to declared filing"),
-            Check("memo.recommendation", "memo", artifact.get("recommendation") in {"proceed", "proceed_with_conditions", "do_not_proceed"}, False, "Memo has a valid recommendation"),
-            Check("memo.scenario", "memo", artifact.get("scenario_id") in spec["allowed_scenarios"], True, "Scenario is allowed"),
+            Check(
+                "memo.risks",
+                "memo",
+                expected_risks.issubset(risks),
+                True,
+                "Memo contains all material risks for declared version",
+            ),
+            Check(
+                "memo.citations",
+                "memo",
+                bool(citations)
+                and all(_citation_matches(item, document_id) for item in citations),
+                True,
+                "Memo citations point to declared filing",
+            ),
+            Check(
+                "memo.recommendation",
+                "memo",
+                artifact.get("recommendation")
+                in {"proceed", "proceed_with_conditions", "do_not_proceed"},
+                False,
+                "Memo has a valid recommendation",
+            ),
+            Check(
+                "memo.scenario",
+                "memo",
+                artifact.get("scenario_id") in spec["allowed_scenarios"],
+                True,
+                "Scenario is allowed",
+            ),
         ]
     )
     return ArtifactScore("memo", _score(checks), checks)
 
 
-def coordination_checks(spec: dict[str, Any], artifacts: dict[str, dict[str, Any]]) -> list[Check]:
+def coordination_checks(
+    spec: dict[str, Any], artifacts: dict[str, dict[str, Any]]
+) -> list[Check]:
     required_version = str(spec["required_source_version"])
     required_scenario = str(spec["required_scenario_id"])
     checks: list[Check] = []
     for name, artifact in artifacts.items():
-        checks.append(Check(f"freshness.{name}", "coordination", artifact.get("source_version") == required_version, True, f"{name} uses the required latest filing"))
-        checks.append(Check(f"scenario.{name}", "coordination", artifact.get("scenario_id") == required_scenario, True, f"{name} uses the shared scenario"))
+        checks.append(
+            Check(
+                f"freshness.{name}",
+                "coordination",
+                artifact.get("source_version") == required_version,
+                True,
+                f"{name} uses the required latest filing",
+            )
+        )
+        checks.append(
+            Check(
+                f"scenario.{name}",
+                "coordination",
+                artifact.get("scenario_id") == required_scenario,
+                True,
+                f"{name} uses the shared scenario",
+            )
+        )
 
     diligence_facts = artifacts["diligence"].get("facts", {})
     valuation_inputs = artifacts["valuation"].get("inputs", {})
-    for key in ("price_per_share_usd", "primary_shares_m", "existing_shares_m", "debt_usd_m", "cash_usd_m"):
-        checks.append(Check(f"handoff.diligence_to_valuation.{key}", "coordination", _close(diligence_facts.get(key), valuation_inputs.get(key)), True, f"Valuation consumes diligence fact {key}"))
+    for key in (
+        "price_per_share_usd",
+        "primary_shares_m",
+        "existing_shares_m",
+        "debt_usd_m",
+        "cash_usd_m",
+    ):
+        checks.append(
+            Check(
+                f"handoff.diligence_to_valuation.{key}",
+                "coordination",
+                _close(diligence_facts.get(key), valuation_inputs.get(key)),
+                True,
+                f"Valuation consumes diligence fact {key}",
+            )
+        )
 
     valuation_outputs = artifacts["valuation"].get("outputs", {})
     memo_metrics = artifacts["memo"].get("headline_metrics", {})
-    for key in ("gross_proceeds_usd_m", "post_money_equity_value_usd_m", "net_debt_usd_m", "dilution_pct"):
-        checks.append(Check(f"handoff.valuation_to_memo.{key}", "coordination", _close(valuation_outputs.get(key), memo_metrics.get(key)), True, f"Memo reuses valuation output {key}"))
+    for key in (
+        "gross_proceeds_usd_m",
+        "post_money_equity_value_usd_m",
+        "net_debt_usd_m",
+        "dilution_pct",
+    ):
+        checks.append(
+            Check(
+                f"handoff.valuation_to_memo.{key}",
+                "coordination",
+                _metric_close(key, valuation_outputs.get(key), memo_metrics.get(key)),
+                True,
+                f"Memo reuses valuation output {key} within its reporting tolerance",
+            )
+        )
 
     risk_flags = set(artifacts["risk"].get("risk_flags", []))
     memo_risks = set(artifacts["memo"].get("top_risks", []))
-    checks.append(Check("handoff.risk_to_memo", "coordination", risk_flags.issubset(memo_risks), True, "Memo carries forward all risk-team findings"))
+    checks.append(
+        Check(
+            "handoff.risk_to_memo",
+            "coordination",
+            risk_flags.issubset(memo_risks),
+            True,
+            "Memo carries forward all risk-team findings",
+        )
+    )
 
     latest_document = str(_version(spec, required_version)["document_id"])
     memo_citations = artifacts["memo"].get("citations", [])
-    checks.append(Check("latest_provenance.memo", "coordination", bool(memo_citations) and all(_citation_matches(item, latest_document) for item in memo_citations), True, "Final memo cites only the latest authoritative filing"))
+    checks.append(
+        Check(
+            "latest_provenance.memo",
+            "coordination",
+            bool(memo_citations)
+            and all(
+                _citation_matches(item, latest_document) for item in memo_citations
+            ),
+            True,
+            "Final memo cites only the latest authoritative filing",
+        )
+    )
     return checks
 
 
@@ -237,7 +406,9 @@ def score_run(spec_path: Path, run_dir: Path) -> WorkflowReport:
     component_score = mean(item.score for item in local.values())
     coordination_score = _score(coord_checks)
     workflow_score = 0.6 * component_score + 0.4 * coordination_score
-    enterprise_success = all(check.passed for check in local_checks + coord_checks if check.critical)
+    enterprise_success = all(
+        check.passed for check in local_checks + coord_checks if check.critical
+    )
     return WorkflowReport(
         workflow_id=str(spec["workflow_id"]),
         system_id=run_dir.name,
@@ -252,7 +423,13 @@ def score_run(spec_path: Path, run_dir: Path) -> WorkflowReport:
     )
 
 
-def _artifact_bundle(spec: dict[str, Any], versions: dict[str, str], *, omit_new_risk: bool = False, stale_memo_citation: bool = False) -> dict[str, dict[str, Any]]:
+def _artifact_bundle(
+    spec: dict[str, Any],
+    versions: dict[str, str],
+    *,
+    omit_new_risk: bool = False,
+    stale_memo_citation: bool = False,
+) -> dict[str, dict[str, Any]]:
     scenario = str(spec["required_scenario_id"])
     diligence_version = _version(spec, versions["diligence"])
     valuation_version = _version(spec, versions["valuation"])
@@ -265,7 +442,10 @@ def _artifact_bundle(spec: dict[str, Any], versions: dict[str, str], *, omit_new
         "source_version": versions["diligence"],
         "scenario_id": scenario,
         "facts": diligence_facts,
-        "citations": {key: f"{diligence_version['document_id']}:fact:{key}" for key in diligence_facts},
+        "citations": {
+            key: f"{diligence_version['document_id']}:fact:{key}"
+            for key in diligence_facts
+        },
     }
 
     valuation_facts = dict(valuation_version["facts"])
@@ -273,7 +453,16 @@ def _artifact_bundle(spec: dict[str, Any], versions: dict[str, str], *, omit_new
         "department": "valuation",
         "source_version": versions["valuation"],
         "scenario_id": scenario,
-        "inputs": {key: valuation_facts[key] for key in ("price_per_share_usd", "primary_shares_m", "existing_shares_m", "debt_usd_m", "cash_usd_m")},
+        "inputs": {
+            key: valuation_facts[key]
+            for key in (
+                "price_per_share_usd",
+                "primary_shares_m",
+                "existing_shares_m",
+                "debt_usd_m",
+                "cash_usd_m",
+            )
+        },
         "outputs": financial_metrics(valuation_facts),
     }
 
@@ -290,25 +479,54 @@ def _artifact_bundle(spec: dict[str, Any], versions: dict[str, str], *, omit_new
     memo_risks = list(memo_version["risk_flags"])
     if omit_new_risk and memo_risks:
         memo_risks = memo_risks[:-1]
-    memo_document = _version(spec, "v1")["document_id"] if stale_memo_citation else memo_version["document_id"]
+    memo_document = (
+        _version(spec, "v1")["document_id"]
+        if stale_memo_citation
+        else memo_version["document_id"]
+    )
     memo = {
         "department": "ecm_committee",
         "source_version": versions["memo"],
         "scenario_id": scenario,
         "headline_metrics": financial_metrics(memo_version["facts"]),
         "top_risks": memo_risks,
-        "citations": [f"{memo_document}:summary:offering", f"{memo_document}:summary:risks"],
+        "citations": [
+            f"{memo_document}:summary:offering",
+            f"{memo_document}:summary:risks",
+        ],
         "recommendation": "proceed_with_conditions",
     }
-    return {"diligence": diligence, "valuation": valuation, "risk": risk, "memo": memo}
+    return {
+        "diligence": diligence,
+        "valuation": valuation,
+        "risk": risk,
+        "memo": memo,
+    }
 
 
-def generate_synthetic_baselines(spec_path: Path, output_root: Path) -> list[Path]:
+def generate_synthetic_baselines(
+    spec_path: Path, output_root: Path
+) -> list[Path]:
     spec = read_json(spec_path)
     systems = {
-        "coordinated_team": _artifact_bundle(spec, {key: "v2" for key in ARTIFACT_FILES}),
-        "siloed_benchmark_winners": _artifact_bundle(spec, {"diligence": "v2", "valuation": "v1", "risk": "v2", "memo": "v1"}),
-        "partial_handoff": _artifact_bundle(spec, {key: "v2" for key in ARTIFACT_FILES}, omit_new_risk=True, stale_memo_citation=True),
+        "coordinated_team": _artifact_bundle(
+            spec, {key: "v2" for key in ARTIFACT_FILES}
+        ),
+        "siloed_benchmark_winners": _artifact_bundle(
+            spec,
+            {
+                "diligence": "v2",
+                "valuation": "v1",
+                "risk": "v2",
+                "memo": "v1",
+            },
+        ),
+        "partial_handoff": _artifact_bundle(
+            spec,
+            {key: "v2" for key in ARTIFACT_FILES},
+            omit_new_risk=True,
+            stale_memo_citation=True,
+        ),
     }
     run_dirs: list[Path] = []
     for system_id, artifacts in systems.items():
@@ -320,7 +538,9 @@ def generate_synthetic_baselines(spec_path: Path, output_root: Path) -> list[Pat
     return run_dirs
 
 
-def run_synthetic_pilot(spec_path: Path, output_root: Path, report_path: Path) -> dict[str, Any]:
+def run_synthetic_pilot(
+    spec_path: Path, output_root: Path, report_path: Path
+) -> dict[str, Any]:
     run_dirs = generate_synthetic_baselines(spec_path, output_root)
     detailed_reports = [score_run(spec_path, run_dir) for run_dir in run_dirs]
     reports = []
@@ -349,8 +569,13 @@ def run_synthetic_pilot(spec_path: Path, output_root: Path, report_path: Path) -
         "systems": reports,
         "interpretation": {
             "coordinated_team": "Oracle-like consistency control.",
-            "siloed_benchmark_winners": "Each department is internally correct for its declared filing, but versions do not compose into a current enterprise state.",
-            "partial_handoff": "Latest filing is used, but a risk and provenance handoff are incomplete.",
+            "siloed_benchmark_winners": (
+                "Each department is internally correct for its declared filing, "
+                "but versions do not compose into a current enterprise state."
+            ),
+            "partial_handoff": (
+                "Latest filing is used, but a risk and provenance handoff are incomplete."
+            ),
         },
     }
     write_json(report_path, summary)
