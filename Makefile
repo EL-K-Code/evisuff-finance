@@ -2,7 +2,7 @@ CASE_INDEX ?= 0
 SYSTEM_INDEX ?= 0
 CONDITION ?= generalist
 
-.PHONY: test validate smoke audit paper clean-paper workflow-test workflow-pilot experiment-test empirical-dry-run real-case-test real-case-validate privacy-test provider-test list-provider-models prepare-real-run provider-smoke run-real-models
+.PHONY: test validate smoke audit paper clean-paper workflow-test workflow-pilot experiment-test empirical-dry-run staged-test staged-dry-run real-case-test real-case-validate privacy-test provider-test list-provider-models prepare-real-run provider-smoke run-real-models
 
 test:
 	PYTHONPATH=src python -m unittest discover -s tests -v
@@ -31,6 +31,9 @@ workflow-pilot:
 experiment-test:
 	PYTHONPATH=src python -m unittest discover -s tests -p 'test_experiment_runner.py' -v
 
+staged-test:
+	PYTHONPATH=src python -m unittest discover -s tests -p 'test_staged_workflow.py' -v
+
 real-case-test:
 	PYTHONPATH=src python -m unittest discover -s tests -p 'test_real_cases.py' -v
 
@@ -48,6 +51,9 @@ real-case-validate:
 
 empirical-dry-run:
 	PYTHONPATH=src python -m evisuff.experiment_cli run configs/ipo_empirical_dry_run.json --overwrite
+
+staged-dry-run:
+	PYTHONPATH=src python -m evisuff.staged_cli run configs/ipo_staged_dry_run.json --overwrite
 
 list-provider-models:
 	PYTHONPATH=src python tools/list_provider_models.py --env .env
