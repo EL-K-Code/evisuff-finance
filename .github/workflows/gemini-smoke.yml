@@ -8,9 +8,9 @@ on:
         required: false
         default: gemini-3.6-flash
         type: string
-  push:
+  pull_request:
     branches:
-      - agent/ipo-bank-workflow-pilot
+      - main
     paths:
       - .github/workflows/gemini-smoke.yml
 
