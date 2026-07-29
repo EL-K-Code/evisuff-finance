@@ -10,14 +10,16 @@ The three cases are benchmark inputs and gold annotations, not model results. Ea
 
 No conference-grade empirical claim should be made until a second reviewer independently checks the numeric labels, risk labels, document chronology, and evidence normalization.
 
-## Gold-label isolation
+## Gold-label isolation and public output vocabulary
 
 Each case contains two separate structures:
 
 - `source_packet`: the public evidence shown to evaluated systems;
-- `versions`: private gold facts and risk identifiers used only by deterministic controls and verifiers.
+- `versions`: private gold facts and scored risk sets used only by deterministic controls and verifiers.
 
 Hosted API prompts receive only `source_packet`. The command backend also strips the private `spec` from metadata before invoking an evaluated local agent.
+
+Risk evidence in `source_packet` includes a public `risk_id`. This field is the canonical output vocabulary that an evaluated system must use in `risk_flags` and `top_risks`; it is not a leaked answer. The private gold structure determines which public identifiers are required for a particular version. Public and scored risk identifiers are checked for exact alignment in the test suite so a model is never asked to guess an internal label.
 
 ## Normalized field definitions
 
@@ -35,6 +37,10 @@ The valuation department derives:
 - dilution = primary shares ÷ (existing shares + primary shares).
 
 These are benchmark calculations, not investment recommendations or full valuation models.
+
+### Numeric scoring contract
+
+Source facts and cross-department handoffs are checked with an effective absolute tolerance of `1e-6`. Derived monetary metrics expressed in USD millions and dilution percentages use an absolute reporting tolerance of `0.01`. The looser derived-metric tolerance permits harmless presentation rounding while still rejecting economically meaningful calculation errors. The tolerance values must be frozen with the benchmark and disclosed in empirical reports.
 
 ## Case 1 — Reddit, Inc. (`RDDT`)
 
@@ -96,7 +102,7 @@ The case tests whether agents reconcile multiple simultaneous changes rather tha
 
 ## Evidence policy
 
-Evidence text in `source_packet` is a short normalized annotation, not a verbatim quotation. Every document URL must point to the official SEC EDGAR archive. The validator rejects non-SEC URLs, missing accessions, duplicate evidence identifiers, mismatched version IDs, leaked gold-label keys, and a required source version that is not chronologically latest.
+Evidence text in `source_packet` is a short normalized annotation, not a verbatim quotation. Every document URL must point to the official SEC EDGAR archive. Validation rejects non-SEC URLs, missing accessions, duplicate evidence identifiers, mismatched version IDs, hidden fact leakage, public/scored risk-ontology mismatches, and a required source version that is not chronologically latest.
 
 ## Reproduce validation
 
