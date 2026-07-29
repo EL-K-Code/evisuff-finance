@@ -61,14 +61,17 @@
           },
           {
             "evidence_id": "risk_advertising",
+            "risk_id": "advertising_dependence",
             "text": "Revenue depends heavily on advertising demand and advertiser relationships."
           },
           {
             "evidence_id": "risk_content",
+            "risk_id": "content_moderation",
             "text": "User-generated content and content moderation can create legal, reputational, and engagement risks."
           },
           {
             "evidence_id": "risk_control",
+            "risk_id": "dual_class_control",
             "text": "The dual-class structure concentrates voting control with Class B holders."
           }
         ]
@@ -112,14 +115,17 @@
           },
           {
             "evidence_id": "risk_advertising",
+            "risk_id": "advertising_dependence",
             "text": "Revenue depends heavily on advertising demand and advertiser relationships."
           },
           {
             "evidence_id": "risk_content",
+            "risk_id": "content_moderation",
             "text": "User-generated content and content moderation can create legal, reputational, and engagement risks."
           },
           {
             "evidence_id": "risk_control",
+            "risk_id": "dual_class_control",
             "text": "The dual-class structure concentrates voting control with Class B holders."
           }
         ]
