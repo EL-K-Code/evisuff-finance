@@ -25,6 +25,18 @@ class RealCaseValidationTests(unittest.TestCase):
         for case in report["cases"]:
             self.assertTrue(case["changed_facts"] or case["changed_risks"], case)
 
+    def test_case_pack_contains_a_material_risk_update(self) -> None:
+        report = validate_index(INDEX)
+        cases_with_changed_risks = [
+            case for case in report["cases"] if case["changed_risks"]
+        ]
+        self.assertTrue(
+            cases_with_changed_risks,
+            "The stateful benchmark must include at least one filing update that changes the scored risk state.",
+        )
+        reddit = next(case for case in report["cases"] if case["case_id"] == "reddit_2024")
+        self.assertIn("ftc_data_licensing_inquiry", reddit["changed_risks"])
+
     def test_gold_labels_are_not_allowed_inside_source_packet_versions(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
