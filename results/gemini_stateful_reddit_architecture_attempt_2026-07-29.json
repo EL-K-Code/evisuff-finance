@@ -1,0 +1,45 @@
+{
+  "result_type": "provider_quota_incident_not_model_results",
+  "date": "2026-07-29",
+  "model": "gemini-3.6-flash",
+  "case": "reddit",
+  "requested_conditions": [
+    "staged_isolated",
+    "staged_multi_agent"
+  ],
+  "github_actions_run_id": 30449394732,
+  "workflow_head_sha": "c9c07039b0e3531ae4946030b642c7cd2b7a4963",
+  "artifact": {
+    "id": 8722959983,
+    "sha256": "45fedec4b5f24f4409bb87276617f5a6d4f5f4eae7c5ffbe7370f0acfc573a77"
+  },
+  "provider_status": {
+    "error": "HTTP 429 RESOURCE_EXHAUSTED",
+    "quota_metric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+    "quota_id": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",
+    "daily_limit": 20
+  },
+  "conditions": {
+    "staged_isolated": {
+      "status": "not_evaluated_due_to_provider_quota",
+      "scores_reportable": false,
+      "successful_model_calls": 0,
+      "planned_model_calls": 8
+    },
+    "staged_multi_agent": {
+      "status": "not_evaluated_due_to_provider_quota",
+      "scores_reportable": false,
+      "successful_model_calls": 0,
+      "planned_model_calls": 8
+    }
+  },
+  "claim_boundary": "Neither architecture produced a model result. The zero-valued fallback fields in the failed runner reports are infrastructure placeholders and must not be interpreted as benchmark scores.",
+  "resume": {
+    "workflow": ".github/workflows/gemini-pilot.yml",
+    "recommended_order": [
+      "staged_isolated",
+      "staged_multi_agent"
+    ],
+    "run_one_condition_per_quota_window": true
+  }
+}
