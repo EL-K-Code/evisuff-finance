@@ -1,5 +1,6 @@
 name: Gemini two-case workflow pilot
 
+# One-time PR trigger for the approved 18-call pilot.
 on:
   workflow_dispatch:
   pull_request:
