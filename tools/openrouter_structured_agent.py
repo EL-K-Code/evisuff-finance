@@ -124,6 +124,17 @@ def _parse_structured_content(content: str, department: str | None) -> dict[str,
     raise ValueError(f"OpenRouter response did not contain the required JSON object: {detail}")
 
 
+def _retry_budget() -> int:
+    raw = os.getenv("OPENROUTER_MAX_RETRIES", "5").strip()
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError("OPENROUTER_MAX_RETRIES must be an integer") from exc
+    if value < 0 or value > 10:
+        raise ValueError("OPENROUTER_MAX_RETRIES must be between 0 and 10")
+    return value
+
+
 def run_agent(request_payload: dict[str, Any]) -> dict[str, Any]:
     api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     model = os.getenv(
@@ -136,6 +147,7 @@ def run_agent(request_payload: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError("Missing OPENROUTER_API_KEY")
     if not model:
         raise RuntimeError("Missing OPENROUTER_MODEL")
+    max_retries = _retry_budget()
 
     department_value = request_payload.get("department")
     department = str(department_value) if department_value is not None else None
@@ -170,6 +182,7 @@ def run_agent(request_payload: dict[str, Any]) -> dict[str, Any]:
         f"{base_url}/chat/completions",
         headers,
         body,
+        max_retries=max_retries,
     )
     content = _extract_content(raw)
     parsed = _parse_structured_content(content, department)
@@ -194,6 +207,7 @@ def run_agent(request_payload: dict[str, Any]) -> dict[str, Any]:
             "finish_reason": finish_reason,
             "latency_seconds": round(float(raw.get("_latency_seconds", 0.0)), 6),
             "department_schema": department or "generalist",
+            "max_retries": max_retries,
         },
     }
 
