@@ -1,0 +1,70 @@
+{
+  "result_type": "single_model_single_repetition_pilot_not_final_paper_results",
+  "model": {
+    "provider": "Google Gemini API",
+    "model_id": "gemini-3.6-flash",
+    "temperature": 0.0,
+    "reasoning_effort": "low",
+    "structured_output": "strict_json_schema"
+  },
+  "execution": {
+    "github_actions_run_id": 30440680592,
+    "workflow_head_sha": "c6ebefc4d752bc5a6cad18e2e1eaa03a3a28032e",
+    "artifact_id": 8719462779,
+    "artifact_sha256": "1cffb675a63473db89cbc351592f8aff9f7e6c66a0e4730ec1bd07f3b3177802",
+    "planned_api_calls": 18,
+    "cost_recorded_usd": 0.0
+  },
+  "rubrik_2024": {
+    "status": "completed_and_rescored_under_corrected_contract",
+    "rescoring_contract_commit": "a762e496d5560810c0bc4054494e2ad2705c6647",
+    "reason_for_rescoring": "The original coordination verifier used fact-level tolerance for derived metric handoffs. A 0.000009 percentage-point dilution rounding difference was incorrectly treated as a workflow failure. Derived metric handoffs now use the same documented reporting tolerance as local metric checks.",
+    "conditions": {
+      "isolated": {
+        "component_score": 1.0,
+        "coordination_score": 1.0,
+        "workflow_score": 1.0,
+        "composition_gap": 0.0,
+        "enterprise_success": true,
+        "input_tokens": 7257,
+        "output_tokens": 775
+      },
+      "generalist": {
+        "component_score": 1.0,
+        "coordination_score": 1.0,
+        "workflow_score": 1.0,
+        "composition_gap": 0.0,
+        "enterprise_success": true,
+        "input_tokens": 2196,
+        "output_tokens": 987
+      },
+      "multi_agent": {
+        "component_score": 1.0,
+        "coordination_score": 1.0,
+        "workflow_score": 1.0,
+        "composition_gap": 0.0,
+        "enterprise_success": true,
+        "input_tokens": 8531,
+        "output_tokens": 713
+      }
+    },
+    "total_input_tokens": 17984,
+    "total_output_tokens": 2475
+  },
+  "coreweave_2025": {
+    "status": "not_evaluated_due_to_provider_quota",
+    "scores_reportable": false,
+    "failure_class": "provider_infrastructure",
+    "provider_error": "HTTP 429 RESOURCE_EXHAUSTED",
+    "quota_metric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+    "daily_free_tier_limit": 20,
+    "resume_workflow": ".github/workflows/gemini-pilot.yml",
+    "resume_planned_api_calls": 9
+  },
+  "claim_boundary": {
+    "architecture_comparison_supported": false,
+    "leaderboard_claim_supported": false,
+    "paper_grade_claim_supported": false,
+    "reason": "Only one model, one completed IPO case, and one repetition are available. CoreWeave was not evaluated because the provider quota was exhausted."
+  }
+}
