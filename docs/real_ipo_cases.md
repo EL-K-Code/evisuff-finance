@@ -44,23 +44,26 @@ Source facts and cross-department handoffs are checked with an effective absolut
 
 ## Case 1 — Reddit, Inc. (`RDDT`)
 
-**Research stressor:** preliminary midpoint versus final price and a closing update that adds the fully exercised underwriter option.
+**Research stressor:** preliminary midpoint versus final price, a closing update that adds the fully exercised underwriter option, and a newly disclosed regulatory inquiry affecting the risk state.
 
 ### Version 1
 
-- S-1/A accession `0001628280-24-010137`;
+- S-1/A accession `0001628280-24-010137`, filed March 11, 2024;
 - assumed midpoint price: $32.50;
 - primary shares: 15,276,527;
-- existing shares used in the denominator: 143,707,045.
+- existing shares used in the denominator: 143,707,045;
+- no scored FTC data-licensing inquiry because the company had not yet received the March 14 letter.
 
 ### Version 2
 
+- S-1/A accession `0001628280-24-011448`, filed March 15, 2024, first disclosing the FTC inquiry;
 - final 424B4 accession `0001628280-24-012380`;
 - closing 8-K accession `0001628280-24-012880`;
 - final price: $34.00;
-- primary shares at closing: 18,576,527, including the 3,300,000-share underwriter option.
+- primary shares at closing: 18,576,527, including the 3,300,000-share underwriter option;
+- new scored risk: `ftc_data_licensing_inquiry`.
 
-The case tests whether later departments continue to use the stale midpoint or omit the closing option.
+The case tests whether later departments update both the financial state and the risk memo after Reddit disclosed a non-public FTC inquiry focused on selling, licensing, or sharing user-generated content with third parties to train AI models.
 
 ## Case 2 — Rubrik, Inc. (`RBRK`)
 
@@ -112,7 +115,7 @@ make privacy-test
 make real-case-validate
 ```
 
-The committed report is `results/real_ipo_case_validation.json`. It currently records three valid cases, eight official SEC documents, and 52 normalized evidence items.
+The committed report is `results/real_ipo_case_validation.json`. It currently records three valid cases, eight official SEC documents, and 53 normalized evidence items. Reddit is the first case with a scored risk-set transition between versions.
 
 ## Before real-model execution
 
