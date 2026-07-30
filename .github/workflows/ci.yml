@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   test:
@@ -40,3 +41,260 @@ jobs:
         run: make empirical-dry-run
       - name: Run stateful amendment controls
         run: make staged-dry-run
+
+  openrouter_matrix_completion:
+    name: OpenRouter CoreWeave and Rubrik matrix completion
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'reopened' &&
+      contains(github.event.pull_request.title, '[RUN OR COMPLETE MATRIX]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_API_BASE: https://openrouter.ai/api/v1
+      OPENROUTER_MODEL: openai/gpt-oss-20b:free
+      OPENROUTER_MAX_RETRIES: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify secret, fixed model and 20-call budget
+        shell: bash
+        run: |
+          test -n "${OPENROUTER_API_KEY:-}" || { echo "Missing OPENROUTER_API_KEY" >&2; exit 1; }
+          test "${OPENROUTER_MAX_RETRIES}" = "0"
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          req = urllib.request.Request(
+              "https://openrouter.ai/api/v1/models",
+              headers={
+                  "Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}",
+                  "Accept": "application/json",
+              },
+          )
+          with urllib.request.urlopen(req, timeout=60) as response:
+              payload = json.loads(response.read().decode("utf-8"))
+          available = {
+              str(item.get("id", ""))
+              for item in payload.get("data", [])
+              if isinstance(item, dict)
+          }
+          model = os.environ["OPENROUTER_MODEL"]
+          if model not in available:
+              raise SystemExit(f"Required OpenRouter model is unavailable: {model}")
+          print(f"Frozen model available: {model}")
+          print("Planned model calls: 20; hidden retries: 0")
+          PY
+
+      - name: Install and validate frozen benchmark
+        run: |
+          python -m pip install -e .
+          python tools/openrouter_structured_agent.py --self-test
+          PYTHONPATH=src python -m unittest \
+            tests.test_openrouter_structured_agent \
+            tests.test_gemini_structured_agent \
+            tests.test_staged_workflow \
+            tests.test_workflow_scoring_contract -v
+
+      - name: Build four secret-free experiment configurations
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          experiments = [
+              ("coreweave", "../data/ipo_real_cases/coreweave_2025/spec.json", "staged_generalist", 2),
+              ("coreweave", "../data/ipo_real_cases/coreweave_2025/spec.json", "staged_isolated", 8),
+              ("rubrik", "../data/ipo_real_cases/rubrik_2024/spec.json", "staged_generalist", 2),
+              ("rubrik", "../data/ipo_real_cases/rubrik_2024/spec.json", "staged_isolated", 8),
+          ]
+          for case, spec, condition, planned_calls in experiments:
+              slug = condition.removeprefix("staged_")
+              config = {
+                  "experiment_id": f"openrouter-stateful-{case}-{condition}-matrix-completion-v1",
+                  "cases": [spec],
+                  "conditions": [condition],
+                  "repetitions": 1,
+                  "output_root": f"../results/openrouter_{case}_{slug}",
+                  "systems": [
+                      {
+                          "system_id": "openrouter-openai-gpt-oss-20b-free",
+                          "enabled": True,
+                          "backend": {
+                              "type": "command",
+                              "command": ["python", "tools/openrouter_structured_agent.py"],
+                              "timeout_seconds": 600,
+                          },
+                          "pricing_usd_per_million_tokens": {"input": 0.0, "output": 0.0},
+                      }
+                  ],
+                  "planned_calls_for_audit": planned_calls,
+              }
+              path = Path(f"configs/openrouter_{case}_{slug}.local.json")
+              path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+          print("Planned calls: 20 total = CoreWeave 2+8, Rubrik 2+8; retries: 0")
+          PY
+
+      - name: Run CoreWeave staged generalist — 2 calls
+        id: coreweave_generalist
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p results/openrouter_coreweave_generalist
+          set +e
+          PYTHONPATH=src python -m evisuff.staged_cli run \
+            configs/openrouter_coreweave_generalist.local.json \
+            --output-root results/openrouter_coreweave_generalist \
+            --overwrite | tee results/openrouter_coreweave_generalist/console_summary.json
+          code=${PIPESTATUS[0]}
+          echo "$code" > results/openrouter_coreweave_generalist/exit_code.txt
+          exit "$code"
+
+      - name: Cool down after CoreWeave generalist
+        if: always()
+        run: sleep 30
+
+      - name: Run CoreWeave staged isolated — 8 calls
+        id: coreweave_isolated
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p results/openrouter_coreweave_isolated
+          set +e
+          PYTHONPATH=src python -m evisuff.staged_cli run \
+            configs/openrouter_coreweave_isolated.local.json \
+            --output-root results/openrouter_coreweave_isolated \
+            --overwrite | tee results/openrouter_coreweave_isolated/console_summary.json
+          code=${PIPESTATUS[0]}
+          echo "$code" > results/openrouter_coreweave_isolated/exit_code.txt
+          exit "$code"
+
+      - name: Cool down between issuers
+        if: always()
+        run: sleep 60
+
+      - name: Run Rubrik staged generalist — 2 calls
+        id: rubrik_generalist
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p results/openrouter_rubrik_generalist
+          set +e
+          PYTHONPATH=src python -m evisuff.staged_cli run \
+            configs/openrouter_rubrik_generalist.local.json \
+            --output-root results/openrouter_rubrik_generalist \
+            --overwrite | tee results/openrouter_rubrik_generalist/console_summary.json
+          code=${PIPESTATUS[0]}
+          echo "$code" > results/openrouter_rubrik_generalist/exit_code.txt
+          exit "$code"
+
+      - name: Cool down after Rubrik generalist
+        if: always()
+        run: sleep 30
+
+      - name: Run Rubrik staged isolated — 8 calls
+        id: rubrik_isolated
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p results/openrouter_rubrik_isolated
+          set +e
+          PYTHONPATH=src python -m evisuff.staged_cli run \
+            configs/openrouter_rubrik_isolated.local.json \
+            --output-root results/openrouter_rubrik_isolated \
+            --overwrite | tee results/openrouter_rubrik_isolated/console_summary.json
+          code=${PIPESTATUS[0]}
+          echo "$code" > results/openrouter_rubrik_isolated/exit_code.txt
+          exit "$code"
+
+      - name: Build safe matrix-completion summary
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          experiments = [
+              ("coreweave", "staged_generalist", "generalist", 2),
+              ("coreweave", "staged_isolated", "isolated", 8),
+              ("rubrik", "staged_generalist", "generalist", 2),
+              ("rubrik", "staged_isolated", "isolated", 8),
+          ]
+          rows = []
+          for case, condition, slug, planned_calls in experiments:
+              root = Path(f"results/openrouter_{case}_{slug}")
+              summary_path = root / "experiment_summary.json"
+              exit_path = root / "exit_code.txt"
+              exit_code = int(exit_path.read_text().strip()) if exit_path.exists() else None
+              if summary_path.exists():
+                  payload = json.loads(summary_path.read_text(encoding="utf-8"))
+                  reports = payload.get("reports", [])
+                  report = reports[0] if reports else {}
+              else:
+                  report = {}
+              completed = report.get("status") == "completed"
+              rows.append({
+                  "case": case,
+                  "condition": condition,
+                  "status": report.get("status", "failed"),
+                  "reportable": completed,
+                  "initial_version": report.get("initial_version") if completed else None,
+                  "final_version": report.get("final_version") if completed else None,
+                  "round1_workflow_score": report.get("round1_workflow_score") if completed else None,
+                  "workflow_score": report.get("workflow_score") if completed else None,
+                  "component_score": report.get("component_score") if completed else None,
+                  "coordination_score": report.get("coordination_score") if completed else None,
+                  "composition_gap": report.get("composition_gap") if completed else None,
+                  "enterprise_success": report.get("enterprise_success") if completed else None,
+                  "update_success": report.get("update_success") if completed else None,
+                  "stale_artifacts_after_update": report.get("stale_artifacts_after_update") if completed else None,
+                  "artifact_changed_after_update": report.get("artifact_changed_after_update") if completed else None,
+                  "call_count": report.get("call_count") if completed else None,
+                  "planned_calls": planned_calls,
+                  "input_tokens": report.get("total_input_tokens") if completed else None,
+                  "output_tokens": report.get("total_output_tokens") if completed else None,
+                  "estimated_cost_usd": report.get("estimated_cost_usd") if completed else None,
+                  "error": report.get("error"),
+                  "exit_code": exit_code,
+              })
+
+          safe = {
+              "result_type": "openrouter_single_model_two_case_generalist_isolated_matrix_completion_not_final_paper_results",
+              "model": "openai/gpt-oss-20b:free",
+              "conditions": ["staged_generalist", "staged_isolated"],
+              "planned_calls": 20,
+              "hidden_retries": 0,
+              "workflow_runs": rows,
+          }
+          out = Path("results/openrouter_matrix_completion_coreweave_rubrik.json")
+          out.write_text(json.dumps(safe, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(safe, indent=2))
+          if not all(row["reportable"] for row in rows):
+              raise SystemExit("At least one matrix cell was not evaluable")
+          PY
+
+      - name: Upload complete matrix-completion artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openrouter-matrix-completion-${{ github.run_id }}
+          path: |
+            results/openrouter_coreweave_generalist/
+            results/openrouter_coreweave_isolated/
+            results/openrouter_rubrik_generalist/
+            results/openrouter_rubrik_isolated/
+            results/openrouter_matrix_completion_coreweave_rubrik.json
+            configs/openrouter_coreweave_generalist.local.json
+            configs/openrouter_coreweave_isolated.local.json
+            configs/openrouter_rubrik_generalist.local.json
+            configs/openrouter_rubrik_isolated.local.json
+          if-no-files-found: warn
+          retention-days: 30
