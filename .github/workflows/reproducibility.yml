@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   test:
@@ -40,3 +41,124 @@ jobs:
         run: make empirical-dry-run
       - name: Run stateful amendment controls
         run: make staged-dry-run
+
+  prereg_r1a_preflight:
+    name: Preregistered r1-a quota preflight
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[PREFLIGHT PREREG R1-A]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_MODEL: openai/gpt-oss-20b:free
+      FROZEN_SHA: 1342e9cf8a85f6cbc4c05d52001820d4e9ead8fb
+      PREREGISTRATION_ID: evisuff-stateful-ipo-v1
+      BLOCK_ID: r1-a
+      PLANNED_CALLS: "36"
+      KNOWN_SUCCESSFUL_FREE_CALLS_TODAY: "36"
+    steps:
+      - name: Check out frozen benchmark
+        uses: actions/checkout@v4
+        with:
+          ref: freeze/preregistered-v1-2026-07-30
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify frozen SHA and inspect quota safely
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+            echo "Missing OPENROUTER_API_KEY" >&2
+            exit 1
+          fi
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          if [ "$ACTUAL_SHA" != "$FROZEN_SHA" ]; then
+            echo "Frozen SHA mismatch: $ACTUAL_SHA" >&2
+            exit 1
+          fi
+          mkdir -p results/preregistered_runs/r1-a
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          headers = {
+              "Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}",
+              "Accept": "application/json",
+          }
+          def get_json(url: str):
+              req = urllib.request.Request(url, headers=headers)
+              with urllib.request.urlopen(req, timeout=60) as response:
+                  return json.loads(response.read().decode("utf-8")), dict(response.headers.items())
+
+          key_payload, key_headers = get_json("https://openrouter.ai/api/v1/key")
+          models_payload, model_headers = get_json("https://openrouter.ai/api/v1/models")
+          key_data = key_payload.get("data", {}) if isinstance(key_payload, dict) else {}
+          available = {
+              str(row.get("id", ""))
+              for row in models_payload.get("data", [])
+              if isinstance(row, dict)
+          }
+          model = os.environ["OPENROUTER_MODEL"]
+          if model not in available:
+              raise SystemExit(f"Frozen model unavailable: {model}")
+
+          is_free_tier = bool(key_data.get("is_free_tier", False))
+          planned = int(os.environ["PLANNED_CALLS"])
+          known_used = int(os.environ["KNOWN_SUCCESSFUL_FREE_CALLS_TODAY"])
+          documented_daily_limit = 50 if is_free_tier else 1000
+          conservative_remaining = max(0, documented_daily_limit - known_used)
+          can_launch = conservative_remaining >= planned
+          reason = (
+              "sufficient_conservative_daily_budget"
+              if can_launch
+              else "insufficient_conservative_daily_budget_no_model_call_started"
+          )
+          safe = {
+              "result_type": "preregistered_block_quota_preflight",
+              "preregistration_id": os.environ["PREREGISTRATION_ID"],
+              "block_id": os.environ["BLOCK_ID"],
+              "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+              "frozen_sha": os.environ["FROZEN_SHA"],
+              "requested_model": model,
+              "model_available": True,
+              "is_free_tier": is_free_tier,
+              "planned_calls": planned,
+              "known_successful_free_calls_today": known_used,
+              "documented_daily_limit_used_for_guard": documented_daily_limit,
+              "conservative_remaining_calls": conservative_remaining,
+              "can_launch_now": can_launch,
+              "reason": reason,
+              "model_calls_made_by_preflight": 0,
+              "key_limit_reset": key_data.get("limit_reset"),
+              "key_rate_limit_metadata": key_data.get("rate_limit"),
+              "response_rate_limit_headers": {
+                  k: v for source in (key_headers, model_headers) for k, v in source.items()
+                  if k.lower().startswith("x-ratelimit") or k.lower() == "retry-after"
+              },
+          }
+          out = Path("results/preregistered_runs/r1-a/quota_preflight.json")
+          out.write_text(json.dumps(safe, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(safe, indent=2))
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as handle:
+              handle.write(f"CAN_LAUNCH={'true' if can_launch else 'false'}\n")
+          PY
+      - name: Confirm launch gate
+        shell: bash
+        run: |
+          if [ "${CAN_LAUNCH}" = "true" ]; then
+            echo "Quota gate passed: r1-a may be launched in a dedicated official run."
+          else
+            echo "Quota gate blocked r1-a before inference; no official model call was made."
+          fi
+      - name: Upload preflight record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prereg-r1-a-quota-preflight-${{ github.run_id }}
+          path: results/preregistered_runs/r1-a/quota_preflight.json
+          retention-days: 30
+          if-no-files-found: error
