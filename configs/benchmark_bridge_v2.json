@@ -1,0 +1,149 @@
+{
+  "design_id": "evisuff-benchmark-bridge-v2",
+  "created_at": "2026-07-30",
+  "status": "design_frozen_before_item_materialization_and_inference",
+  "supersedes": "evisuff-stateful-ipo-v1",
+  "supersession_reason": "Add direct same-model positioning against FinAR-Bench, IPO Finance Agent, and BigFinanceBench before confirmatory workflow experiments.",
+  "official_v2_inference_started": false,
+  "bridge_results_are_confirmatory": false,
+  "working_title": "Do Finance Agents Compose? From FinAR-Bench, IPO Finance Agent, and BigFinanceBench to Stateful IPO Workflows",
+  "research_question": "Do recognized finance-benchmark scores predict whether the same model can preserve correct, auditable, multi-artifact outputs after an authoritative IPO filing amendment?",
+  "reference_surfaces": {
+    "finar_bench": {
+      "upstream_repository": "https://github.com/SAIFS-AIHub/FinAR-Bench",
+      "upstream_dataset": "https://huggingface.co/datasets/SAIFS-AIHub/FinAR-Bench",
+      "split": "test",
+      "sample_size": 12,
+      "task_type_counts": {
+        "fact": 4,
+        "indicator": 4,
+        "reasoning": 4
+      },
+      "selection_seed": 20260730,
+      "selection_policy": "Sort companies by company_code and instances by task_id, then sample without replacement within task type. Commit exact task IDs before inference.",
+      "item_manifest": "configs/bridge_v2_finar_items.json",
+      "metrics": [
+        "fact_f1",
+        "indicator_numerical_accuracy",
+        "reasoning_score"
+      ]
+    },
+    "ipo_finance_agent": {
+      "upstream_repository": "https://github.com/benstaf/ipoagent",
+      "upstream_file": "data/public_spacex_70.txt",
+      "sample_size": 12,
+      "one_based_question_positions": [
+        1,
+        2,
+        5,
+        9,
+        12,
+        16,
+        18,
+        19,
+        25,
+        29,
+        35,
+        46
+      ],
+      "copy_policy": "Copy exact question text and official rubric from a pinned upstream revision. Do not paraphrase or replace after inference.",
+      "item_manifest": "configs/bridge_v2_ipo_agent_items.json",
+      "metrics": [
+        "rubric_accuracy",
+        "completion_rate"
+      ]
+    },
+    "big_finance_bench": {
+      "upstream_repository": "https://github.com/Rogo-Technologies/big-finance-benchmark",
+      "upstream_file": "data/big_finance_subset.jsonl",
+      "sample_size": 12,
+      "item_ids": [
+        "bf-0a8c20169a",
+        "bf-0e2b33b21b",
+        "bf-14e00db503",
+        "bf-20474b5540",
+        "bf-2c01534176",
+        "bf-36d4a10aa8",
+        "bf-37f81aef9b",
+        "bf-39bacf8580",
+        "bf-50f29af2ed",
+        "bf-51844d71db",
+        "bf-55f33faa82",
+        "bf-5b4cd39939"
+      ],
+      "item_manifest": "configs/bridge_v2_big_finance_items.json",
+      "metrics": [
+        "rubric_score",
+        "final_answer_accuracy"
+      ],
+      "preserve_official_harness_and_tools": true
+    },
+    "evisuff_stateful_ipo": {
+      "case": "data/ipo_real_cases/reddit_2024/spec.json",
+      "conditions": [
+        "staged_generalist",
+        "staged_isolated",
+        "staged_multi_agent"
+      ],
+      "calls_per_condition": {
+        "staged_generalist": 2,
+        "staged_isolated": 8,
+        "staged_multi_agent": 8
+      },
+      "evaluated_model_calls": 18,
+      "metrics": [
+        "strict_enterprise_success_v2",
+        "workflow_score_v1",
+        "workflow_score_v2",
+        "component_score_v2",
+        "coordination_score_v2",
+        "composition_gap",
+        "amendment_delta"
+      ]
+    }
+  },
+  "evaluated_model_call_budget_per_model": {
+    "finar_bench": 12,
+    "ipo_finance_agent": 12,
+    "big_finance_bench": 12,
+    "evisuff_stateful_ipo": 18,
+    "total": 54
+  },
+  "judge_call_policy": {
+    "count_separately_from_evaluated_model_calls": true,
+    "judge_models_must_be_frozen_before_inference": true,
+    "judge_calls_are_not_included_in_54": true
+  },
+  "model_panel_policy": {
+    "minimum_models": 2,
+    "required_roles": [
+      "openai_frontier_anchor_with_public_big_finance_score",
+      "lower_cost_or_open_weight_cross_surface_control"
+    ],
+    "preferred_anchor_order": [
+      "gpt-5.6-terra-or-sol-exact-api-id-to-freeze",
+      "gpt-5.5-exact-api-id-to-freeze"
+    ],
+    "existing_gpt_oss_20b_role": "exploratory_engineering_control_not_sole_headline_model",
+    "exact_model_ids_frozen": false
+  },
+  "cross_benchmark_metrics": {
+    "reference_competence": "mean(finar_fact_f1, finar_indicator_accuracy, finar_reasoning_score, ipo_rubric_accuracy, bfb_rubric_score)",
+    "benchmark_to_workflow_gap": "reference_competence - workflow_score_v2",
+    "composition_retention": "workflow_score_v2 / reference_competence when reference_competence > 0",
+    "amendment_delta": "workflow_score_v2 - workflow_score_v1",
+    "coordination_validity_gap": "coordination_score_v2 - component_score_v2"
+  },
+  "required_pre_inference_gates": [
+    "pin_upstream_commits",
+    "materialize_exact_finar_task_ids",
+    "copy_and_hash_exact_ipo_questions_and_rubrics",
+    "copy_and_hash_exact_big_finance_items_and_rubrics",
+    "freeze_evaluated_model_ids",
+    "freeze_judge_models",
+    "freeze_tool_surfaces",
+    "approve_evaluated_and_judge_call_budget",
+    "create_new_registration_branch"
+  ],
+  "claim_boundary": "The bridge pilot validates direct benchmark positioning and harness interoperability. It is exploratory, uses one EviSuff IPO case, and is excluded from future confirmatory V2 estimates."
+}
