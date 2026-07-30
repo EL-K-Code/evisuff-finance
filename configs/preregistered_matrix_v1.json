@@ -1,0 +1,178 @@
+{
+  "preregistration_id": "evisuff-stateful-ipo-v1",
+  "registration_date": "2026-07-30",
+  "status": "frozen_before_official_inference",
+  "benchmark_commit_sha": "1342e9cf8a85f6cbc4c05d52001820d4e9ead8fb",
+  "frozen_reference_branch": "freeze/preregistered-v1-2026-07-30",
+  "provider": "openrouter",
+  "requested_model": "openai/gpt-oss-20b:free",
+  "model_policy": {
+    "temperature": 0.0,
+    "max_output_tokens": 4096,
+    "api_max_retries": 0,
+    "hidden_benchmark_retries": 0,
+    "allow_provider_backend_fallbacks_for_same_model": true,
+    "allow_model_fallback": false,
+    "require_structured_output": true
+  },
+  "cases": {
+    "reddit": "../data/ipo_real_cases/reddit_2024/spec.json",
+    "coreweave": "../data/ipo_real_cases/coreweave_2025/spec.json",
+    "rubrik": "../data/ipo_real_cases/rubrik_2024/spec.json"
+  },
+  "conditions": [
+    "staged_generalist",
+    "staged_isolated",
+    "staged_multi_agent"
+  ],
+  "calls_per_condition": {
+    "staged_generalist": 2,
+    "staged_isolated": 8,
+    "staged_multi_agent": 8
+  },
+  "repetitions_per_cell": 3,
+  "planned_workflow_runs": 27,
+  "planned_model_calls": 162,
+  "output_root": "../results/preregistered_runs",
+  "system": {
+    "system_id": "openrouter-openai-gpt-oss-20b-free-preregistered-v1",
+    "enabled": true,
+    "backend": {
+      "type": "command",
+      "command": [
+        "python",
+        "tools/openrouter_structured_agent.py"
+      ],
+      "timeout_seconds": 600
+    },
+    "pricing_usd_per_million_tokens": {
+      "input": 0.0,
+      "output": 0.0
+    }
+  },
+  "execution_blocks": [
+    {
+      "block_id": "r1-a",
+      "repetition": 1,
+      "case_order": [
+        "reddit",
+        "coreweave"
+      ],
+      "condition_order": [
+        "staged_generalist",
+        "staged_isolated",
+        "staged_multi_agent"
+      ],
+      "planned_calls": 36
+    },
+    {
+      "block_id": "r1-b",
+      "repetition": 1,
+      "case_order": [
+        "rubrik"
+      ],
+      "condition_order": [
+        "staged_generalist",
+        "staged_isolated",
+        "staged_multi_agent"
+      ],
+      "planned_calls": 18
+    },
+    {
+      "block_id": "r2-a",
+      "repetition": 2,
+      "case_order": [
+        "rubrik",
+        "reddit"
+      ],
+      "condition_order": [
+        "staged_isolated",
+        "staged_multi_agent",
+        "staged_generalist"
+      ],
+      "planned_calls": 36
+    },
+    {
+      "block_id": "r2-b",
+      "repetition": 2,
+      "case_order": [
+        "coreweave"
+      ],
+      "condition_order": [
+        "staged_isolated",
+        "staged_multi_agent",
+        "staged_generalist"
+      ],
+      "planned_calls": 18
+    },
+    {
+      "block_id": "r3-a",
+      "repetition": 3,
+      "case_order": [
+        "coreweave",
+        "rubrik"
+      ],
+      "condition_order": [
+        "staged_multi_agent",
+        "staged_generalist",
+        "staged_isolated"
+      ],
+      "planned_calls": 36
+    },
+    {
+      "block_id": "r3-b",
+      "repetition": 3,
+      "case_order": [
+        "reddit"
+      ],
+      "condition_order": [
+        "staged_multi_agent",
+        "staged_generalist",
+        "staged_isolated"
+      ],
+      "planned_calls": 18
+    }
+  ],
+  "execution_rules": {
+    "minimum_pause_seconds_between_conditions": 60,
+    "minimum_pause_seconds_between_cases": 60,
+    "no_unplanned_calls_inside_official_blocks": true,
+    "pilot_runs_are_excluded": true,
+    "provider_failure_before_model_output": "non_evaluable_and_repeat_same_cell_next_window",
+    "model_schema_or_format_failure": "strict_enterprise_failure_no_replacement_call",
+    "partial_model_workflow_failure": "strict_enterprise_failure_no_replacement_call",
+    "model_unavailable_before_first_official_call": "amend_registration_before_start",
+    "model_unavailable_after_start": "pause_without_mixing_models"
+  },
+  "primary_endpoint": "strict_enterprise_success_v2",
+  "secondary_endpoints": [
+    "enterprise_success",
+    "update_success",
+    "workflow_score",
+    "component_score",
+    "coordination_score",
+    "composition_gap",
+    "round1_workflow_score",
+    "round1_enterprise_success",
+    "stale_artifacts_after_update",
+    "completion_rate",
+    "schema_format_failure_rate",
+    "input_tokens",
+    "output_tokens",
+    "latency_seconds",
+    "call_count"
+  ],
+  "required_run_metadata": [
+    "preregistration_id",
+    "benchmark_commit_sha",
+    "block_id",
+    "repetition",
+    "case",
+    "condition",
+    "requested_model",
+    "returned_model",
+    "response_ids",
+    "response_sha256",
+    "provider_attempt_status"
+  ]
+}
