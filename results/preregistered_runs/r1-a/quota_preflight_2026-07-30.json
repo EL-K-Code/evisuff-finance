@@ -1,0 +1,28 @@
+{
+  "result_type": "preregistered_block_quota_preflight",
+  "preregistration_id": "evisuff-stateful-ipo-v1",
+  "block_id": "r1-a",
+  "checked_at_utc": "2026-07-30T11:48:24Z",
+  "checked_at_europe_paris": "2026-07-30T13:48:24+02:00",
+  "frozen_sha": "1342e9cf8a85f6cbc4c05d52001820d4e9ead8fb",
+  "requested_model": "openai/gpt-oss-20b:free",
+  "model_available": true,
+  "is_free_tier": true,
+  "planned_calls": 36,
+  "known_successful_free_calls_today": 36,
+  "documented_daily_limit_used_for_guard": 50,
+  "conservative_remaining_calls": 14,
+  "can_launch_now": false,
+  "reason": "insufficient_conservative_daily_budget_no_model_call_started",
+  "model_calls_made_by_preflight": 0,
+  "official_workflow_runs_started": 0,
+  "github_actions": {
+    "run_id": 30539965207,
+    "job_id": 90862177141,
+    "artifact_id": 8758260783,
+    "artifact_name": "prereg-r1-a-quota-preflight-30539965207",
+    "artifact_digest": "sha256:f98e1f62c3e838a21162d4e8ac0b3e1337f419a798c87660ac215355f9fc45ed",
+    "head_sha": "7d049494d7f60163799fccd14cec852c95770ed9"
+  },
+  "protocol_interpretation": "The preflight protected the preregistered block from a predictable mid-block quota failure. No official inference began, so repetition r1-a remains completely unstarted and uncontaminated."
+}
