@@ -1,0 +1,31 @@
+{
+  "lock_id": "evisuff-benchmark-bridge-v2-upstream-lock",
+  "created_at": "2026-07-30",
+  "status": "partial_lock_finar_test_file_hash_pending",
+  "sources": {
+    "finar_bench": {
+      "repository": "SAIFS-AIHub/FinAR-Bench",
+      "commit_sha": "bd8efe8b265610d409cbcb1a6c09964870b90bc7",
+      "dataset_repository": "SAIFS-AiHub/FinAR-Bench",
+      "test_file_hash": null,
+      "lock_complete": false,
+      "remaining_action": "Download the official Hugging Face test.txt, record its cryptographic hash, and materialize the 12 selected task IDs before inference."
+    },
+    "ipo_finance_agent": {
+      "repository": "benstaf/ipoagent",
+      "commit_sha": "091f06913e39738ef464ac3548ad4b533ac47c50",
+      "path": "data/public_spacex_70.txt",
+      "git_blob_sha": "c39fac3fd612225c2148fb758c184153564e0abd",
+      "lock_complete": true
+    },
+    "big_finance_bench": {
+      "repository": "Rogo-Technologies/big-finance-benchmark",
+      "commit_sha": "244fb7a4d57e0f6f5ac1d82c50f55c355f49a4bb",
+      "path": "data/big_finance_subset.jsonl",
+      "git_blob_sha": "bc1df35babc3acd7c9363836ac41aa4ba7d37013",
+      "lock_complete": true
+    }
+  },
+  "inference_allowed": false,
+  "unlock_rule": "All source locks, exact item manifests, evaluated models, judges, tool surfaces, and budgets must be frozen in a new registration commit before any bridge inference."
+}
