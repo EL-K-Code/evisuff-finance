@@ -1,7 +1,12 @@
 {
   "preregistration_id": "evisuff-stateful-ipo-v1",
   "registration_date": "2026-07-30",
-  "status": "frozen_before_official_inference",
+  "status": "superseded_before_official_inference",
+  "superseded_on": "2026-07-30",
+  "superseded_by_design": "evisuff-benchmark-bridge-v2",
+  "official_model_calls_completed": 0,
+  "official_workflow_runs_completed": 0,
+  "supersession_record": "../docs/preregistered_v1_supersession.md",
   "benchmark_commit_sha": "1342e9cf8a85f6cbc4c05d52001820d4e9ead8fb",
   "frozen_reference_branch": "freeze/preregistered-v1-2026-07-30",
   "provider": "openrouter",
@@ -36,7 +41,7 @@
   "output_root": "../results/preregistered_runs",
   "system": {
     "system_id": "openrouter-openai-gpt-oss-20b-free-preregistered-v1",
-    "enabled": true,
+    "enabled": false,
     "backend": {
       "type": "command",
       "command": [
