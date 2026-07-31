@@ -1,0 +1,103 @@
+{
+  "protocol_id": "evisuff-bridge-v2-ipo-rubric-protocol",
+  "created_at": "2026-07-31",
+  "status": "protocol_frozen_before_rubric_generation_and_evaluated_model_inference",
+  "source": {
+    "repository": "benstaf/ipoagent",
+    "commit_sha": "091f06913e39738ef464ac3548ad4b533ac47c50",
+    "question_manifest": "configs/bridge_v2_ipo_agent_items.json",
+    "orchestrator_path": "finance_agent/generaterubrics.py",
+    "orchestrator_blob_sha": "6b38c22249e9aed3d5df17f89610662d09e4961e",
+    "induction_path": "finance_agent/stage3_inducerubrics.py",
+    "induction_blob_sha": "65d29793b94da122bae5a96243b293811836aa09"
+  },
+  "public_artifact_finding": {
+    "questions_publicly_materialized": true,
+    "static_per_question_final_rubrics_publicly_materialized": false,
+    "rubric_pipeline_scripts_publicly_materialized": true,
+    "interpretation": "The pinned repository publishes the evaluator-optimizer rubric pipeline but not a static final rubric file mapped to the 70 public SpaceX questions."
+  },
+  "replication_pipeline": {
+    "stage_1": "Extract atomic facts independently from five frozen rubric-construction answer sets.",
+    "stage_2": "Cluster and consolidate semantically equivalent facts; retain facts with agreement_count >= 2.",
+    "stage_3": "Induce critical, important, and optional rubric tiers from consolidated facts.",
+    "stage_4": "Audit rubrics for omissions, hallucinations, mistiering, contradictions, and redundancy.",
+    "enrichment_loop": "Run targeted enrichment, consolidation, and re-audit for at most 5 iterations.",
+    "repair_loop": "Run targeted repair and re-audit for at most 5 iterations.",
+    "final_review": "Require documented human expert review before freezing the scoring rubric."
+  },
+  "frozen_parameters": {
+    "rubric_construction_answer_sets": 5,
+    "minimum_fact_agreement": 2,
+    "maximum_enrichment_iterations": 5,
+    "maximum_repair_iterations": 5,
+    "temperature_for_rubric_pipeline_calls": 0.0,
+    "weight_profiles": {
+      "quantitative": {
+        "critical": 12.0,
+        "important": 6.0,
+        "optional": 2.0,
+        "hallucination": -10.0
+      },
+      "disclosure": {
+        "critical": 10.0,
+        "important": 5.0,
+        "optional": 2.0,
+        "hallucination": -6.0
+      },
+      "governance": {
+        "critical": 10.0,
+        "important": 5.0,
+        "optional": 2.0,
+        "hallucination": -6.0
+      },
+      "forensic": {
+        "critical": 10.0,
+        "important": 5.0,
+        "optional": 2.0,
+        "hallucination": -8.0
+      },
+      "modeling": {
+        "critical": 10.0,
+        "important": 5.0,
+        "optional": 2.0,
+        "hallucination": -8.0
+      },
+      "comparative": {
+        "critical": 10.0,
+        "important": 5.0,
+        "optional": 2.0,
+        "hallucination": -6.0
+      }
+    }
+  },
+  "anti_bias_rules": {
+    "rubric_construction_runs_are_excluded_from_evaluated_model_scores": true,
+    "rubric_construction_ensemble_ids_must_be_frozen_before_generation": true,
+    "rubric_judge_ids_must_be_frozen_before_generation": true,
+    "no_rubric_edit_after_first_evaluated_model_answer": true,
+    "all_machine_generated_rubric_versions_and_human_edits_must_be_preserved": true,
+    "human_reviewers_must_not_see_anonymized_evaluated_model_identity_when_adjudicating": true
+  },
+  "preferred_resolution_order": [
+    "Use author-approved frozen rubrics for the 12 selected public questions if supplied before evaluated-model inference.",
+    "Otherwise reproduce the pinned evaluator-optimizer pipeline under this protocol and obtain documented human expert review."
+  ],
+  "required_outputs_before_inference": {
+    "rubric_construction_ensemble_manifest": "configs/bridge_v2_ipo_rubric_ensemble.json",
+    "machine_generated_rubric": "results/benchmark_bridge_v2/ipo_rubrics_machine.json",
+    "human_review_log": "results/benchmark_bridge_v2/ipo_rubrics_review.json",
+    "frozen_final_rubric": "configs/bridge_v2_ipo_agent_rubrics.json",
+    "all_outputs_sha256_recorded": true
+  },
+  "gate_status": {
+    "protocol_resolved": true,
+    "rubric_construction_ensemble_frozen": false,
+    "rubric_judges_frozen": false,
+    "machine_rubrics_generated": false,
+    "human_expert_review_completed": false,
+    "final_rubrics_frozen": false
+  },
+  "reporting_label": "reproduced IPO Finance Agent public subset; not an official leaderboard reproduction unless author-approved rubrics and equivalent tool access are used",
+  "model_calls_completed_under_this_protocol": 0
+}
