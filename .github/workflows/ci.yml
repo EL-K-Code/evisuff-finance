@@ -50,12 +50,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write
     steps:
-      - name: Check out PR head
+      - name: Check out PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -78,6 +78,7 @@ jobs:
           import hashlib
           import json
           import random
+          import re
           from collections import Counter
           from pathlib import Path
 
@@ -85,6 +86,15 @@ jobs:
           source_path = root / 'test.txt'
           raw = source_path.read_bytes()
           text = raw.decode('utf-8-sig')
+          headers = (root / 'download_headers.txt').read_text(
+              encoding='utf-8', errors='replace'
+          )
+
+          def last_header(name: str) -> str | None:
+              matches = re.findall(
+                  rf'(?im)^{re.escape(name)}:\s*([^\r\n]+)', headers
+              )
+              return matches[-1].strip().strip('"') if matches else None
 
           try:
               parsed = json.loads(text)
@@ -185,20 +195,18 @@ jobs:
           if len({item['task_id'] for item in selected}) != 12:
               raise SystemExit('Selected task IDs are not unique')
 
-          headers = (root / 'download_headers.txt').read_text(
-              encoding='utf-8', errors='replace'
-          )
           manifest = {
               'manifest_id': 'evisuff-bridge-v2-finar-items',
               'source': {
                   'dataset': 'SAIFS-AiHub/FinAR-Bench',
                   'split': 'test',
                   'download_url': 'https://huggingface.co/datasets/SAIFS-AiHub/FinAR-Bench/resolve/main/test.txt',
+                  'dataset_revision': last_header('x-repo-commit'),
+                  'etag': last_header('etag'),
                   'sha256': hashlib.sha256(raw).hexdigest(),
                   'size_bytes': len(raw),
                   'record_count': record_count,
                   'task_counts': available,
-                  'response_headers': headers,
               },
               'selection': {
                   'seed': seed,
@@ -214,6 +222,7 @@ jobs:
           )
           summary = {
               'source_sha256': manifest['source']['sha256'],
+              'dataset_revision': manifest['source']['dataset_revision'],
               'source_size_bytes': len(raw),
               'record_count': record_count,
               'available_task_counts': available,
@@ -228,6 +237,84 @@ jobs:
           )
           print(json.dumps(summary, ensure_ascii=False, indent=2))
           PY
+      - name: Commit FinAR item manifest and source lock
+        shell: bash
+        env:
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          cp results/finar_v2_materialization/bridge_v2_finar_items.json \
+            configs/bridge_v2_finar_items.json
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          manifest_path = Path('configs/bridge_v2_finar_items.json')
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          manifest_sha = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+
+          lock_path = Path('configs/bridge_v2_upstream_lock.json')
+          lock = json.loads(lock_path.read_text(encoding='utf-8'))
+          finar = lock['sources']['finar_bench']
+          finar.update({
+              'dataset_revision': manifest['source']['dataset_revision'],
+              'test_file_sha256': manifest['source']['sha256'],
+              'test_file_size_bytes': manifest['source']['size_bytes'],
+              'test_file_etag': manifest['source']['etag'],
+              'item_manifest': 'configs/bridge_v2_finar_items.json',
+              'item_manifest_sha256': manifest_sha,
+              'selected_task_ids': [item['task_id'] for item in manifest['items']],
+              'lock_complete': True,
+              'remaining_action': None,
+          })
+          lock['status'] = 'all_upstream_source_files_locked'
+          lock['inference_allowed'] = False
+          lock['remaining_non_source_gates'] = [
+              'materialize IPO Finance Agent questions and rubrics',
+              'materialize BigFinanceBench items and rubrics',
+              'freeze evaluated model IDs',
+              'freeze judge models',
+              'freeze tool surfaces',
+              'approve evaluated and judge call budgets',
+              'create a new V2 registration branch',
+          ]
+          lock_path.write_text(
+              json.dumps(lock, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+
+          bridge_path = Path('configs/benchmark_bridge_v2.json')
+          bridge = json.loads(bridge_path.read_text(encoding='utf-8'))
+          bridge['status'] = 'finar_items_materialized_before_inference'
+          bridge['reference_surfaces']['finar_bench'].update({
+              'dataset_revision': manifest['source']['dataset_revision'],
+              'test_file_sha256': manifest['source']['sha256'],
+              'selected_task_ids': [item['task_id'] for item in manifest['items']],
+              'item_manifest_sha256': manifest_sha,
+          })
+          bridge['gate_status'] = {
+              'pin_upstream_commits': True,
+              'materialize_exact_finar_task_ids': True,
+              'copy_and_hash_exact_ipo_questions_and_rubrics': False,
+              'copy_and_hash_exact_big_finance_items_and_rubrics': False,
+              'freeze_evaluated_model_ids': False,
+              'freeze_judge_models': False,
+              'freeze_tool_surfaces': False,
+              'approve_evaluated_and_judge_call_budget': False,
+              'create_new_registration_branch': False,
+          }
+          bridge_path.write_text(
+              json.dumps(bridge, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add configs/bridge_v2_finar_items.json \
+            configs/bridge_v2_upstream_lock.json \
+            configs/benchmark_bridge_v2.json
+          git commit -m 'Materialize official FinAR V2 bridge items'
+          git push origin HEAD:"${PR_BRANCH}"
       - name: Upload auditable FinAR materialization
         uses: actions/upload-artifact@v4
         with:
