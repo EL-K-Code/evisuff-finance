@@ -1,7 +1,7 @@
 {
   "lock_id": "evisuff-benchmark-bridge-v2-upstream-lock",
   "created_at": "2026-07-30",
-  "status": "all_public_items_materialized_ipo_rubric_protocol_pending",
+  "status": "all_public_items_materialized_ipo_rubric_protocol_frozen",
   "sources": {
     "finar_bench": {
       "repository": "SAIFS-AIHub/FinAR-Bench",
@@ -56,7 +56,11 @@
       ],
       "questions_materialized": true,
       "static_public_rubrics_materialized": false,
-      "rubric_protocol_status": "decision_required_before_inference"
+      "rubric_protocol": "configs/bridge_v2_ipo_rubric_protocol.json",
+      "rubric_protocol_sha256": "3d76320356f1a9126f89254e7c7bfec87aa3841c9a4d5e495207f1ffa4fabaa8",
+      "rubric_protocol_resolved": true,
+      "final_rubrics_materialized": false,
+      "reporting_label": "reproduced IPO Finance Agent public subset"
     },
     "big_finance_bench": {
       "repository": "Rogo-Technologies/big-finance-benchmark",
@@ -86,13 +90,15 @@
     }
   },
   "inference_allowed": false,
-  "unlock_rule": "All exact item manifests, evaluated models, judges, tool surfaces, and budgets must be frozen in a new registration commit before any bridge inference.",
+  "unlock_rule": "All final rubrics, exact evaluated models, rubric-construction models, judges, tool surfaces, and budgets must be frozen in a new registration commit before any bridge inference.",
   "remaining_non_source_gates": [
-    "resolve IPO Finance Agent rubric protocol",
+    "freeze IPO rubric-construction ensemble IDs",
+    "freeze IPO rubric judge IDs",
+    "generate, review, and freeze final IPO rubrics",
     "freeze evaluated model IDs",
-    "freeze judge models",
+    "freeze evaluation judge models",
     "freeze tool surfaces",
-    "approve evaluated and judge call budgets",
+    "approve evaluated, rubric-construction, and judge call budgets",
     "create a new V2 registration branch"
   ]
 }
