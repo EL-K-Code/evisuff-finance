@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
 
 jobs:
   test:
@@ -40,3 +41,286 @@ jobs:
         run: make empirical-dry-run
       - name: Run stateful amendment controls
         run: make staged-dry-run
+
+  materialize-reference-v2:
+    if: >-
+      github.event.action == 'reopened' &&
+      contains(github.event.pull_request.title, '[MATERIALIZE REFS V2]')
+    name: Materialize IPO Agent and BigFinanceBench V2 items
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch pinned public benchmark repositories
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p results/reference_v2_materialization/upstream
+
+          git init results/reference_v2_materialization/upstream/ipoagent
+          git -C results/reference_v2_materialization/upstream/ipoagent remote add origin https://github.com/benstaf/ipoagent.git
+          git -C results/reference_v2_materialization/upstream/ipoagent fetch --depth=1 origin 091f06913e39738ef464ac3548ad4b533ac47c50
+          git -C results/reference_v2_materialization/upstream/ipoagent checkout --detach FETCH_HEAD
+
+          git init results/reference_v2_materialization/upstream/bigfinance
+          git -C results/reference_v2_materialization/upstream/bigfinance remote add origin https://github.com/Rogo-Technologies/big-finance-benchmark.git
+          git -C results/reference_v2_materialization/upstream/bigfinance fetch --depth=1 origin 244fb7a4d57e0f6f5ac1d82c50f55c355f49a4bb
+          git -C results/reference_v2_materialization/upstream/bigfinance checkout --detach FETCH_HEAD
+      - name: Materialize exact public items and inspect rubric availability
+        shell: bash
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          root = Path('results/reference_v2_materialization')
+          ipo_repo = root / 'upstream' / 'ipoagent'
+          bfb_repo = root / 'upstream' / 'bigfinance'
+
+          def sha256(path: Path) -> str:
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          def git_blob(repo: Path, path: str) -> str:
+              return subprocess.check_output(
+                  ['git', '-C', str(repo), 'rev-parse', f'HEAD:{path}'],
+                  text=True,
+              ).strip()
+
+          # IPO Finance Agent: exact public questions.
+          ipo_path = ipo_repo / 'data' / 'public_spacex_70.txt'
+          raw_ipo = ipo_path.read_bytes()
+          questions = [line.strip() for line in raw_ipo.decode('utf-8-sig').splitlines() if line.strip()]
+          if len(questions) != 70:
+              raise SystemExit(f'Expected 70 IPO questions, found {len(questions)}')
+          positions = [1, 2, 5, 9, 12, 16, 18, 19, 25, 29, 35, 46]
+          selected_questions = [
+              {
+                  'position': position,
+                  'question_id': f'spacex-public-{position:02d}',
+                  'question': questions[position - 1],
+                  'question_sha256': hashlib.sha256(
+                      questions[position - 1].encode('utf-8')
+                  ).hexdigest(),
+              }
+              for position in positions
+          ]
+
+          rubric_named_files = sorted(
+              str(path.relative_to(ipo_repo))
+              for path in ipo_repo.rglob('*')
+              if path.is_file() and 'rubric' in path.name.lower()
+          )
+          rubric_text_hits = []
+          for path in ipo_repo.rglob('*'):
+              if not path.is_file() or path.stat().st_size > 2_000_000:
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8', errors='ignore')
+              except OSError:
+                  continue
+              if 'rubric' in text.lower():
+                  rubric_text_hits.append(str(path.relative_to(ipo_repo)))
+          rubric_text_hits = sorted(set(rubric_text_hits))
+
+          ipo_manifest = {
+              'manifest_id': 'evisuff-bridge-v2-ipo-agent-items',
+              'source': {
+                  'repository': 'benstaf/ipoagent',
+                  'commit_sha': '091f06913e39738ef464ac3548ad4b533ac47c50',
+                  'path': 'data/public_spacex_70.txt',
+                  'git_blob_sha': git_blob(ipo_repo, 'data/public_spacex_70.txt'),
+                  'sha256': hashlib.sha256(raw_ipo).hexdigest(),
+                  'size_bytes': len(raw_ipo),
+                  'public_question_count': len(questions),
+              },
+              'selection': {
+                  'policy': 'Fixed one-based public question positions frozen before inference.',
+                  'positions': positions,
+                  'count': len(selected_questions),
+              },
+              'items': selected_questions,
+              'rubric_availability': {
+                  'static_public_rubrics_materialized': False,
+                  'rubric_named_files_found': rubric_named_files,
+                  'repository_files_mentioning_rubric': rubric_text_hits,
+                  'status': 'No per-question static public rubric artifact was located at the pinned public repository revision.',
+                  'required_protocol_decision': 'Obtain author-approved frozen rubrics or preregister a reproduced evaluator-optimizer rubric-generation procedure before scoring this surface.',
+              },
+          }
+          ipo_out = root / 'bridge_v2_ipo_agent_items.json'
+          ipo_out.write_text(json.dumps(ipo_manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          # BigFinanceBench: exact public items with weighted rubrics.
+          bfb_path = bfb_repo / 'data' / 'big_finance_subset.jsonl'
+          raw_bfb = bfb_path.read_bytes()
+          records = [json.loads(line) for line in raw_bfb.decode('utf-8-sig').splitlines() if line.strip()]
+          by_id = {record['id']: record for record in records}
+          selected_ids = [
+              'bf-0a8c20169a',
+              'bf-0e2b33b21b',
+              'bf-14e00db503',
+              'bf-20474b5540',
+              'bf-2c01534176',
+              'bf-36d4a10aa8',
+              'bf-37f81aef9b',
+              'bf-39bacf8580',
+              'bf-50f29af2ed',
+              'bf-51844d71db',
+              'bf-55f33faa82',
+              'bf-5b4cd39939',
+          ]
+          missing = [item_id for item_id in selected_ids if item_id not in by_id]
+          if missing:
+              raise SystemExit(f'Missing BigFinanceBench IDs: {missing}')
+          selected_bfb = [by_id[item_id] for item_id in selected_ids]
+          for item in selected_bfb:
+              if not isinstance(item.get('rubric'), list) or not item['rubric']:
+                  raise SystemExit(f'Missing weighted rubric for {item["id"]}')
+              if not all('text' in row and 'points' in row for row in item['rubric']):
+                  raise SystemExit(f'Invalid rubric schema for {item["id"]}')
+
+          bfb_manifest = {
+              'manifest_id': 'evisuff-bridge-v2-big-finance-items',
+              'source': {
+                  'repository': 'Rogo-Technologies/big-finance-benchmark',
+                  'commit_sha': '244fb7a4d57e0f6f5ac1d82c50f55c355f49a4bb',
+                  'path': 'data/big_finance_subset.jsonl',
+                  'git_blob_sha': git_blob(bfb_repo, 'data/big_finance_subset.jsonl'),
+                  'sha256': hashlib.sha256(raw_bfb).hexdigest(),
+                  'size_bytes': len(raw_bfb),
+                  'public_item_count': len(records),
+              },
+              'selection': {
+                  'policy': 'Fixed public item IDs frozen before inference.',
+                  'item_ids': selected_ids,
+                  'count': len(selected_bfb),
+              },
+              'items': selected_bfb,
+          }
+          bfb_out = root / 'bridge_v2_big_finance_items.json'
+          bfb_out.write_text(json.dumps(bfb_manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          summary = {
+              'ipo_source_sha256': ipo_manifest['source']['sha256'],
+              'ipo_manifest_sha256': sha256(ipo_out),
+              'ipo_question_count': len(selected_questions),
+              'ipo_static_public_rubrics_materialized': False,
+              'ipo_rubric_named_files_found': rubric_named_files,
+              'big_finance_source_sha256': bfb_manifest['source']['sha256'],
+              'big_finance_manifest_sha256': sha256(bfb_out),
+              'big_finance_item_count': len(selected_bfb),
+              'big_finance_rubrics_validated': True,
+              'model_calls': 0,
+          }
+          (root / 'safe_summary.json').write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(summary, ensure_ascii=False, indent=2))
+          PY
+      - name: Commit manifests and update V2 gates
+        shell: bash
+        env:
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          cp results/reference_v2_materialization/bridge_v2_ipo_agent_items.json configs/bridge_v2_ipo_agent_items.json
+          cp results/reference_v2_materialization/bridge_v2_big_finance_items.json configs/bridge_v2_big_finance_items.json
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          def digest(path: Path) -> str:
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          ipo_path = Path('configs/bridge_v2_ipo_agent_items.json')
+          bfb_path = Path('configs/bridge_v2_big_finance_items.json')
+          ipo = json.loads(ipo_path.read_text(encoding='utf-8'))
+          bfb = json.loads(bfb_path.read_text(encoding='utf-8'))
+
+          lock_path = Path('configs/bridge_v2_upstream_lock.json')
+          lock = json.loads(lock_path.read_text(encoding='utf-8'))
+          lock['sources']['ipo_finance_agent'].update({
+              'source_file_sha256': ipo['source']['sha256'],
+              'source_file_size_bytes': ipo['source']['size_bytes'],
+              'item_manifest': str(ipo_path),
+              'item_manifest_sha256': digest(ipo_path),
+              'selected_question_positions': ipo['selection']['positions'],
+              'questions_materialized': True,
+              'static_public_rubrics_materialized': False,
+              'rubric_protocol_status': 'decision_required_before_inference',
+          })
+          lock['sources']['big_finance_bench'].update({
+              'source_file_sha256': bfb['source']['sha256'],
+              'source_file_size_bytes': bfb['source']['size_bytes'],
+              'item_manifest': str(bfb_path),
+              'item_manifest_sha256': digest(bfb_path),
+              'selected_item_ids': bfb['selection']['item_ids'],
+              'items_and_weighted_rubrics_materialized': True,
+          })
+          lock['status'] = 'all_public_items_materialized_ipo_rubric_protocol_pending'
+          lock['inference_allowed'] = False
+          lock['remaining_non_source_gates'] = [
+              'resolve IPO Finance Agent rubric protocol',
+              'freeze evaluated model IDs',
+              'freeze judge models',
+              'freeze tool surfaces',
+              'approve evaluated and judge call budgets',
+              'create a new V2 registration branch',
+          ]
+          lock_path.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          bridge_path = Path('configs/benchmark_bridge_v2.json')
+          bridge = json.loads(bridge_path.read_text(encoding='utf-8'))
+          bridge['status'] = 'all_public_items_materialized_ipo_rubric_protocol_pending'
+          bridge['reference_surfaces']['ipo_finance_agent'].update({
+              'source_file_sha256': ipo['source']['sha256'],
+              'selected_question_ids': [item['question_id'] for item in ipo['items']],
+              'item_manifest_sha256': digest(ipo_path),
+              'static_public_rubrics_materialized': False,
+              'rubric_protocol_status': 'decision_required_before_inference',
+          })
+          bridge['reference_surfaces']['big_finance_bench'].update({
+              'source_file_sha256': bfb['source']['sha256'],
+              'item_manifest_sha256': digest(bfb_path),
+              'weighted_rubrics_materialized': True,
+          })
+          gates = bridge.setdefault('gate_status', {})
+          gates['materialize_exact_finar_task_ids'] = True
+          gates['materialize_exact_ipo_questions'] = True
+          gates['copy_and_hash_exact_ipo_questions_and_rubrics'] = False
+          gates['resolve_ipo_rubric_protocol'] = False
+          gates['copy_and_hash_exact_big_finance_items_and_rubrics'] = True
+          bridge_path.write_text(json.dumps(bridge, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add configs/bridge_v2_ipo_agent_items.json \
+            configs/bridge_v2_big_finance_items.json \
+            configs/bridge_v2_upstream_lock.json \
+            configs/benchmark_bridge_v2.json
+          git commit -m 'Materialize IPO Agent and BigFinanceBench V2 items'
+          git push origin HEAD:"${PR_BRANCH}"
+      - name: Upload auditable reference materialization
+        uses: actions/upload-artifact@v4
+        with:
+          name: reference-v2-materialization-${{ github.run_id }}
+          path: |
+            results/reference_v2_materialization/bridge_v2_ipo_agent_items.json
+            results/reference_v2_materialization/bridge_v2_big_finance_items.json
+            results/reference_v2_materialization/safe_summary.json
+          if-no-files-found: error
+          retention-days: 30
