@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
 
 jobs:
   test:
@@ -40,3 +41,197 @@ jobs:
         run: make empirical-dry-run
       - name: Run stateful amendment controls
         run: make staged-dry-run
+
+  materialize-finar-v2:
+    if: >-
+      github.event.action == 'reopened' &&
+      contains(github.event.pull_request.title, '[MATERIALIZE FINAR V2]')
+    name: Materialize official FinAR V2 items
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download official FinAR-Bench test split
+        shell: bash
+        run: |
+          mkdir -p results/finar_v2_materialization
+          curl --location --fail --retry 3 --retry-delay 5 \
+            --dump-header results/finar_v2_materialization/download_headers.txt \
+            --output results/finar_v2_materialization/test.txt \
+            'https://huggingface.co/datasets/SAIFS-AiHub/FinAR-Bench/resolve/main/test.txt'
+          test -s results/finar_v2_materialization/test.txt
+          sha256sum results/finar_v2_materialization/test.txt
+      - name: Select deterministic bridge tasks
+        shell: bash
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import random
+          from collections import Counter
+          from pathlib import Path
+
+          root = Path('results/finar_v2_materialization')
+          source_path = root / 'test.txt'
+          raw = source_path.read_bytes()
+          text = raw.decode('utf-8-sig')
+
+          try:
+              parsed = json.loads(text)
+          except json.JSONDecodeError:
+              parsed = [json.loads(line) for line in text.splitlines() if line.strip()]
+
+          if isinstance(parsed, dict):
+              for key in ('data', 'records', 'test'):
+                  if isinstance(parsed.get(key), list):
+                      records = parsed[key]
+                      break
+              else:
+                  records = [parsed]
+          elif isinstance(parsed, list):
+              records = parsed
+          else:
+              raise SystemExit(f'Unsupported FinAR test format: {type(parsed).__name__}')
+
+          candidates: dict[str, list[dict]] = {
+              'fact': [],
+              'indicator': [],
+              'reasoning': [],
+          }
+          record_count = 0
+          for record in records:
+              if not isinstance(record, dict):
+                  continue
+              record_count += 1
+              table = record.get('table')
+              instances = record.get('instances')
+              if not isinstance(instances, list):
+                  continue
+              record_company = record.get('company')
+              record_code = record.get('company_code')
+              for instance in instances:
+                  if not isinstance(instance, dict):
+                      continue
+                  task_type = str(instance.get('task_type', '')).strip().lower()
+                  aliases = {
+                      'information extraction': 'fact',
+                      'extraction': 'fact',
+                      'indicator computation': 'indicator',
+                      'computation': 'indicator',
+                      'logical reasoning': 'reasoning',
+                  }
+                  task_type = aliases.get(task_type, task_type)
+                  if task_type not in candidates:
+                      continue
+                  task_id = str(instance.get('task_id', '')).strip()
+                  if not task_id:
+                      raise SystemExit('Encountered FinAR instance without task_id')
+                  company_code = str(
+                      instance.get('company_code') or record_code or ''
+                  ).strip()
+                  company = instance.get('company') or record_company
+                  item = {
+                      'task_id': task_id,
+                      'task_type': task_type,
+                      'task': instance.get('task'),
+                      'ground_truth': instance.get('ground_truth'),
+                      'task_num': instance.get('task_num'),
+                      'company': company,
+                      'company_code': company_code,
+                      'conditions': instance.get('conditions'),
+                      'table': table,
+                      'table_sha256': hashlib.sha256(
+                          str(table).encode('utf-8')
+                      ).hexdigest(),
+                  }
+                  candidates[task_type].append(item)
+
+          for items in candidates.values():
+              items.sort(key=lambda item: (item['company_code'], item['task_id']))
+
+          expected_available = {'fact': 540, 'indicator': 540, 'reasoning': 90}
+          available = {kind: len(items) for kind, items in candidates.items()}
+          if available != expected_available:
+              raise SystemExit(
+                  f'Unexpected FinAR task counts: {available}; expected {expected_available}'
+              )
+
+          seed = 20260730
+          rng = random.Random(seed)
+          selected: list[dict] = []
+          for kind in ('fact', 'indicator', 'reasoning'):
+              selected.extend(rng.sample(candidates[kind], 4))
+          selected.sort(
+              key=lambda item: (
+                  ('fact', 'indicator', 'reasoning').index(item['task_type']),
+                  item['company_code'],
+                  item['task_id'],
+              )
+          )
+
+          counts = Counter(item['task_type'] for item in selected)
+          if counts != Counter({'fact': 4, 'indicator': 4, 'reasoning': 4}):
+              raise SystemExit(f'Invalid selected task counts: {counts}')
+          if len({item['task_id'] for item in selected}) != 12:
+              raise SystemExit('Selected task IDs are not unique')
+
+          headers = (root / 'download_headers.txt').read_text(
+              encoding='utf-8', errors='replace'
+          )
+          manifest = {
+              'manifest_id': 'evisuff-bridge-v2-finar-items',
+              'source': {
+                  'dataset': 'SAIFS-AiHub/FinAR-Bench',
+                  'split': 'test',
+                  'download_url': 'https://huggingface.co/datasets/SAIFS-AiHub/FinAR-Bench/resolve/main/test.txt',
+                  'sha256': hashlib.sha256(raw).hexdigest(),
+                  'size_bytes': len(raw),
+                  'record_count': record_count,
+                  'task_counts': available,
+                  'response_headers': headers,
+              },
+              'selection': {
+                  'seed': seed,
+                  'algorithm': 'Sort by company_code and task_id; use Python random.Random(seed).sample without replacement in fixed order fact, indicator, reasoning.',
+                  'counts': dict(counts),
+              },
+              'items': selected,
+          }
+          output = root / 'bridge_v2_finar_items.json'
+          output.write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          summary = {
+              'source_sha256': manifest['source']['sha256'],
+              'source_size_bytes': len(raw),
+              'record_count': record_count,
+              'available_task_counts': available,
+              'selected_task_ids': [item['task_id'] for item in selected],
+              'selected_task_types': dict(counts),
+              'manifest_sha256': hashlib.sha256(output.read_bytes()).hexdigest(),
+              'model_calls': 0,
+          }
+          (root / 'safe_summary.json').write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(summary, ensure_ascii=False, indent=2))
+          PY
+      - name: Upload auditable FinAR materialization
+        uses: actions/upload-artifact@v4
+        with:
+          name: finar-v2-materialization-${{ github.run_id }}
+          path: results/finar_v2_materialization/
+          if-no-files-found: error
+          retention-days: 30
