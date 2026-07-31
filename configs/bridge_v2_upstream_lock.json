@@ -1,7 +1,7 @@
 {
   "lock_id": "evisuff-benchmark-bridge-v2-upstream-lock",
   "created_at": "2026-07-30",
-  "status": "all_upstream_source_files_locked",
+  "status": "all_public_items_materialized_ipo_rubric_protocol_pending",
   "sources": {
     "finar_bench": {
       "repository": "SAIFS-AIHub/FinAR-Bench",
@@ -35,21 +35,60 @@
       "commit_sha": "091f06913e39738ef464ac3548ad4b533ac47c50",
       "path": "data/public_spacex_70.txt",
       "git_blob_sha": "c39fac3fd612225c2148fb758c184153564e0abd",
-      "lock_complete": true
+      "lock_complete": true,
+      "source_file_sha256": "8f08e3ec86ac6317b1f3a18c2c10189703b40fc322bb520a1b50eb6ed22261de",
+      "source_file_size_bytes": 24695,
+      "item_manifest": "configs/bridge_v2_ipo_agent_items.json",
+      "item_manifest_sha256": "f875a8a94f6f5e63f7bd324b91875da1c89fb381cbf94955011555320ea0ad23",
+      "selected_question_positions": [
+        1,
+        2,
+        5,
+        9,
+        12,
+        16,
+        18,
+        19,
+        25,
+        29,
+        35,
+        46
+      ],
+      "questions_materialized": true,
+      "static_public_rubrics_materialized": false,
+      "rubric_protocol_status": "decision_required_before_inference"
     },
     "big_finance_bench": {
       "repository": "Rogo-Technologies/big-finance-benchmark",
       "commit_sha": "244fb7a4d57e0f6f5ac1d82c50f55c355f49a4bb",
       "path": "data/big_finance_subset.jsonl",
       "git_blob_sha": "bc1df35babc3acd7c9363836ac41aa4ba7d37013",
-      "lock_complete": true
+      "lock_complete": true,
+      "source_file_sha256": "db7026d11fe6ab3ae6512654489c97ebd65ba92f0432963549fe7ad2ec47fb7b",
+      "source_file_size_bytes": 102325,
+      "item_manifest": "configs/bridge_v2_big_finance_items.json",
+      "item_manifest_sha256": "cd870a223ccbcca0dfc9727309b444bb0d8b59761a6857049169ecca583f951a",
+      "selected_item_ids": [
+        "bf-0a8c20169a",
+        "bf-0e2b33b21b",
+        "bf-14e00db503",
+        "bf-20474b5540",
+        "bf-2c01534176",
+        "bf-36d4a10aa8",
+        "bf-37f81aef9b",
+        "bf-39bacf8580",
+        "bf-50f29af2ed",
+        "bf-51844d71db",
+        "bf-55f33faa82",
+        "bf-5b4cd39939"
+      ],
+      "items_and_weighted_rubrics_materialized": true
     }
   },
   "inference_allowed": false,
   "unlock_rule": "All exact item manifests, evaluated models, judges, tool surfaces, and budgets must be frozen in a new registration commit before any bridge inference.",
   "remaining_non_source_gates": [
-    "materialize IPO Finance Agent questions and rubrics",
-    "materialize BigFinanceBench items and rubrics",
+    "resolve IPO Finance Agent rubric protocol",
     "freeze evaluated model IDs",
     "freeze judge models",
     "freeze tool surfaces",
