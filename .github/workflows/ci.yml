@@ -40,3 +40,38 @@ jobs:
         run: make empirical-dry-run
       - name: Run stateful amendment controls
         run: make staged-dry-run
+
+  finalize-model-lock-v2:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'reopened' &&
+      contains(github.event.pull_request.title, '[FINALIZE MODEL LOCK V2]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply model-lock migration
+        run: python tools/finalize_model_lock_v2.py
+      - name: Validate migrated V2 contract
+        run: PYTHONPATH=src python -m unittest tests.test_benchmark_bridge_v2 -v
+      - name: Commit migrated lock
+        env:
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            configs/bridge_v2_model_panel_candidate.json \
+            configs/bridge_v2_ipo_rubric_protocol.json \
+            configs/benchmark_bridge_v2.json \
+            configs/bridge_v2_upstream_lock.json \
+            tests/test_benchmark_bridge_v2.py
+          git commit -m 'Freeze V2 model and judge routes before inference'
+          git push origin HEAD:"${PR_BRANCH}"
