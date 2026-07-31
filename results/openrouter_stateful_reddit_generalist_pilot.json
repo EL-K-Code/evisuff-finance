@@ -1,0 +1,72 @@
+{
+  "result_type": "single_model_single_case_openrouter_stateful_pilot_not_final_paper_results",
+  "provider": "openrouter",
+  "model": "openai/gpt-oss-20b:free",
+  "case": "reddit_2024",
+  "workflow_id": "reddit-ipo-closing-update-2024-v1",
+  "condition": "staged_generalist",
+  "repetition": 0,
+  "status": "completed",
+  "initial_version": "v1",
+  "final_version": "v2",
+  "round1_workflow_score": 1.0,
+  "component_score": 1.0,
+  "coordination_score": 1.0,
+  "workflow_score": 1.0,
+  "composition_gap": 0.0,
+  "enterprise_success": true,
+  "update_success": true,
+  "stale_artifacts_after_update": [],
+  "changed_artifacts": [
+    "diligence",
+    "valuation",
+    "risk",
+    "memo"
+  ],
+  "round1_risks": [
+    "advertising_dependence",
+    "content_moderation",
+    "dual_class_control"
+  ],
+  "final_risks": [
+    "advertising_dependence",
+    "content_moderation",
+    "dual_class_control",
+    "ftc_data_licensing_inquiry"
+  ],
+  "round1_recommendation": "proceed_with_conditions",
+  "final_recommendation": "proceed_with_conditions",
+  "call_count": 2,
+  "total_input_tokens": 3368,
+  "total_output_tokens": 3135,
+  "estimated_cost_usd": 0.0,
+  "calls": [
+    {
+      "stage": "round1",
+      "input_tokens": 1200,
+      "output_tokens": 1503,
+      "latency_seconds": 55.138588,
+      "response_sha256": "2c00d16da8ed199acdd5bbe0469ae38daa39dc2a4dd56c937670a90a9a50090a"
+    },
+    {
+      "stage": "round2",
+      "input_tokens": 2168,
+      "output_tokens": 1632,
+      "latency_seconds": 61.929431,
+      "response_sha256": "5789e2285122251a4c0dbe9dfa32c7cebb7d3718112f2fba4527a8bea7eb6fcd"
+    }
+  ],
+  "github_actions": {
+    "run_id": 30452058530,
+    "artifact_id": 8723974617,
+    "artifact_name": "openrouter-reddit-generalist-smoke-30452058530",
+    "artifact_digest": "sha256:d550648478682a66ba7745be4b61387e3cdee72adecb4e90d161f73ac7fa7b44",
+    "head_sha": "5bb328fae7ffaa56b30f4a88ac85ce0185ccbcc6"
+  },
+  "engineering_notes": [
+    "The initially selected openai/gpt-oss-120b:free identifier was no longer exposed by the authenticated OpenRouter model catalog and was replaced before inference.",
+    "The first gpt-oss-20b request exposed a provider-format compatibility issue: valid structured content was wrapped rather than returned as raw JSON.",
+    "The adapter was corrected to require response-format-compatible routing and to parse fenced or Harmony-wrapped JSON before this successful frozen run."
+  ],
+  "claim_boundary": "This is an engineering pilot for one free model, one IPO case, one orchestration condition, and one repetition. It is not a paper-grade model comparison or leaderboard result."
+}

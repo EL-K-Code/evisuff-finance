@@ -1,0 +1,33 @@
+{
+  "preregistration_id": "evisuff-stateful-ipo-v1",
+  "registration_date": "2026-07-30",
+  "repository": "EL-K-Code/evisuff-finance",
+  "frozen_commit_sha": "1342e9cf8a85f6cbc4c05d52001820d4e9ead8fb",
+  "frozen_reference_branch": "freeze/preregistered-v1-2026-07-30",
+  "critical_blobs": {
+    "src/evisuff/staged_workflow.py": "a7626679af9c43ebd66b5c39ea6757fb062a4a8b",
+    "src/evisuff/enterprise_workflow.py": "663072817ff274798935d42baacaf3ae26b1cd7d",
+    "tools/openrouter_structured_agent.py": "00f80fa92ded49d776e356bc2ca4b3fb8ab58ea5",
+    "data/ipo_real_cases/reddit_2024/spec.json": "1fd44e49cd96bd8b24a94a5a66b5aebedc430882",
+    "data/ipo_real_cases/coreweave_2025/spec.json": "1d0f55c556191a5a7a174f8210eada3b64472021",
+    "data/ipo_real_cases/rubrik_2024/spec.json": "5fea890470a34cc8557e92c427838d2dedce6916"
+  },
+  "frozen_model": {
+    "provider": "openrouter",
+    "requested_model": "openai/gpt-oss-20b:free",
+    "temperature": 0.0,
+    "max_output_tokens": 4096,
+    "max_retries": 0
+  },
+  "pilot_results_excluded_from_preregistered_analysis": [
+    "results/openrouter_stateful_reddit_generalist_pilot.json",
+    "results/openrouter_stateful_reddit_architecture_pilot.json",
+    "results/openrouter_stateful_coreweave_rubrik_multi_agent_post_reset.json",
+    "results/openrouter_stateful_coreweave_rubrik_generalist_isolated.json",
+    "results/openrouter_stateful_full_matrix_pilot.json",
+    "results/gemini_stateful_reddit_generalist_pilot.json"
+  ],
+  "official_results_root": "results/preregistered_runs",
+  "protocol_document": "docs/preregistered_experiment_v1.md",
+  "execution_plan": "configs/preregistered_matrix_v1.json"
+}

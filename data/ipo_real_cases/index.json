@@ -1,0 +1,26 @@
+{
+  "dataset_id": "ipo-real-cases-v1",
+  "cases": [
+    {
+      "case_id": "reddit_2024",
+      "spec": "reddit_2024/spec.json",
+      "issuer": "Reddit, Inc.",
+      "ticker": "RDDT",
+      "annotation_status": "single_researcher_verified_against_official_sec_sources_second_review_pending"
+    },
+    {
+      "case_id": "rubrik_2024",
+      "spec": "rubrik_2024/spec.json",
+      "issuer": "Rubrik, Inc.",
+      "ticker": "RBRK",
+      "annotation_status": "single_researcher_verified_against_official_sec_sources_second_review_pending"
+    },
+    {
+      "case_id": "coreweave_2025",
+      "spec": "coreweave_2025/spec.json",
+      "issuer": "CoreWeave, Inc.",
+      "ticker": "CRWV",
+      "annotation_status": "single_researcher_verified_against_official_sec_sources_second_review_pending"
+    }
+  ]
+}

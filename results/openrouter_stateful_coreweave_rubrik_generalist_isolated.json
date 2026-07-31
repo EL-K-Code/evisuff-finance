@@ -1,0 +1,167 @@
+{
+  "result_type": "single_model_two_case_openrouter_stateful_generalist_isolated_matrix_completion_not_final_paper_results",
+  "provider": "openrouter",
+  "model": "openai/gpt-oss-20b:free",
+  "executed_on": "2026-07-30",
+  "conditions": [
+    "staged_generalist",
+    "staged_isolated"
+  ],
+  "repetitions_per_cell": 1,
+  "planned_calls": 20,
+  "successful_calls": 20,
+  "hidden_retries": 0,
+  "estimated_cost_usd": 0.0,
+  "cells": [
+    {
+      "case": "coreweave_2025",
+      "condition": "staged_generalist",
+      "status": "completed",
+      "reportable": true,
+      "initial_version": "v1",
+      "final_version": "v2",
+      "round1_workflow_score": 0.94,
+      "workflow_score": 1.0,
+      "component_score": 1.0,
+      "coordination_score": 1.0,
+      "composition_gap": 0.0,
+      "round1_enterprise_success": false,
+      "enterprise_success": true,
+      "update_success": true,
+      "stale_artifacts_after_update": [],
+      "changed_artifacts": ["diligence", "valuation", "risk", "memo"],
+      "call_count": 2,
+      "input_tokens": 3221,
+      "output_tokens": 2889,
+      "critical_round1_failures": [
+        {
+          "check": "diligence.fact.existing_shares_m",
+          "observed": 426302.271,
+          "expected": 426.302271,
+          "diagnosis": "The round-1 generalist interpreted a shares-in-millions field at 1000 times the required scale."
+        },
+        {
+          "check": "diligence.fact.primary_shares_m",
+          "observed": 47178.66,
+          "expected": 47.17866,
+          "diagnosis": "The round-1 generalist interpreted a shares-in-millions field at 1000 times the required scale."
+        }
+      ],
+      "final_failures": [],
+      "interpretation": "The amendment caused a positive correction: the generalist replaced the round-1 scale errors and produced a fully correct v2 workflow."
+    },
+    {
+      "case": "coreweave_2025",
+      "condition": "staged_isolated",
+      "status": "completed",
+      "reportable": true,
+      "initial_version": "v1",
+      "final_version": "v2",
+      "round1_workflow_score": 1.0,
+      "workflow_score": 0.920395,
+      "component_score": 0.9375,
+      "coordination_score": 0.894737,
+      "composition_gap": 0.017105,
+      "round1_enterprise_success": true,
+      "enterprise_success": false,
+      "update_success": false,
+      "stale_artifacts_after_update": [],
+      "changed_artifacts": ["diligence", "valuation", "risk", "memo"],
+      "call_count": 8,
+      "input_tokens": 8170,
+      "output_tokens": 6209,
+      "critical_failures": [
+        {
+          "check": "memo.metric.gross_proceeds_usd_m",
+          "memo_observed": 1500.0,
+          "valuation_handoff": 1463.6,
+          "expected": 1463.6,
+          "diagnosis": "The memo ignored the correct valuation output and substituted an unsupported rounded value."
+        },
+        {
+          "check": "memo.metric.dilution_pct",
+          "memo_observed": 8.08,
+          "valuation_handoff": 7.8823,
+          "expected_approximately": 7.884086,
+          "diagnosis": "The memo ignored the correct valuation output and introduced a new dilution estimate."
+        }
+      ],
+      "inference": "The pair 1500.0 million USD and about 8.08 percent is numerically consistent with roughly 37.5 million primary shares rather than the authoritative 36.59 million, suggesting an unsupported downstream recomputation."
+    },
+    {
+      "case": "rubrik_2024",
+      "condition": "staged_generalist",
+      "status": "completed",
+      "reportable": true,
+      "initial_version": "v1",
+      "final_version": "v2",
+      "round1_workflow_score": 1.0,
+      "workflow_score": 0.96625,
+      "component_score": 0.94375,
+      "coordination_score": 1.0,
+      "composition_gap": -0.0225,
+      "round1_enterprise_success": true,
+      "enterprise_success": false,
+      "update_success": false,
+      "stale_artifacts_after_update": [],
+      "changed_artifacts": ["diligence", "valuation", "risk", "memo"],
+      "call_count": 2,
+      "input_tokens": 3386,
+      "output_tokens": 2998,
+      "critical_failures": [
+        {
+          "check": "valuation.output.gross_proceeds_usd_m",
+          "observed": 862.411264,
+          "expected": 863.112064,
+          "absolute_error_usd_m": -0.7008,
+          "diagnosis": "The generalist ingested the amended share count correctly but made a multiplication error."
+        },
+        {
+          "check": "memo.metric.gross_proceeds_usd_m",
+          "observed": 862.411264,
+          "expected": 863.112064,
+          "diagnosis": "The memo propagated the same arithmetic error consistently, preserving coordination while enterprise success failed."
+        }
+      ],
+      "cross_run_note": "The exact gross-proceeds value 862.411264 also appeared in the earlier Rubrik multi-agent run, suggesting a repeatable model calculation failure rather than a failure unique to one orchestration architecture."
+    },
+    {
+      "case": "rubrik_2024",
+      "condition": "staged_isolated",
+      "status": "completed",
+      "reportable": true,
+      "initial_version": "v1",
+      "final_version": "v2",
+      "round1_workflow_score": 1.0,
+      "workflow_score": 1.0,
+      "component_score": 1.0,
+      "coordination_score": 1.0,
+      "composition_gap": 0.0,
+      "round1_enterprise_success": true,
+      "enterprise_success": true,
+      "update_success": true,
+      "stale_artifacts_after_update": [],
+      "changed_artifacts": ["diligence", "valuation", "risk", "memo"],
+      "call_count": 8,
+      "input_tokens": 8469,
+      "output_tokens": 6624,
+      "critical_failures": [],
+      "interpretation": "The isolated departments correctly ingested the greenshoe update, recomputed all metrics and produced a consistent final memo."
+    }
+  ],
+  "cross_condition_observations": {
+    "coreweave": "The generalist self-corrected to a perfect final workflow, while isolated departments failed because the memo overrode correct valuation handoffs.",
+    "rubrik": "The isolated workflow was perfect, while the generalist repeated an arithmetic error also seen in the earlier multi-agent run.",
+    "freshness": "All four cells revised all four artifacts and left no stale v1 artifact.",
+    "architecture_result": "No architecture dominates on every case; orchestration changes which failure mode becomes visible."
+  },
+  "github_actions": {
+    "run_id": 30530912294,
+    "job_id": 90832774872,
+    "artifact_id": 8755185345,
+    "artifact_name": "openrouter-matrix-completion-30530912294",
+    "artifact_digest": "sha256:7a6e9a0dd243e3fdf9afb2e8c4ce6405d1d9f0634513ff9148ad4d9bcfc58f67",
+    "benchmark_head_sha": "a34a9f97c290887e154c4517c05818d487292628"
+  },
+  "claim_boundary": "These are natural pilot results for one free model, two cases, two architectures and one repetition per cell. They complete the descriptive matrix but are not a leaderboard or a paper-grade population estimate."
+}

@@ -1,0 +1,111 @@
+name: Gemini provider smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Preferred Gemini model ID; falls back to an available Flash model
+        required: false
+        default: gemini-3.6-flash
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gemini-provider-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: One Reddit generalist call
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_API_BASE: https://generativelanguage.googleapis.com/v1beta/openai
+      REQUESTED_GEMINI_MODEL: ${{ inputs.model || 'gemini-3.6-flash' }}
+
+    steps:
+      - name: Check out benchmark branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify Gemini secret exists
+        shell: bash
+        run: |
+          if [ -z "${GEMINI_API_KEY:-}" ]; then
+            echo "Missing repository secret GEMINI_API_KEY" >&2
+            exit 1
+          fi
+
+      - name: Install benchmark
+        run: python -m pip install -e .
+
+      - name: Select an available Gemini Flash model
+        shell: bash
+        run: |
+          model="$(python tools/select_gemini_model.py --preferred "${REQUESTED_GEMINI_MODEL}")"
+          echo "Selected model: ${model}"
+          echo "GEMINI_MODEL=${model}" >> "${GITHUB_ENV}"
+
+      - name: Build secret-free smoke configuration
+        run: python tools/prepare_gemini_smoke.py
+
+      - name: Run one Gemini call on Reddit
+        shell: bash
+        run: |
+          mkdir -p results/provider_smoke
+          PYTHONPATH=src python -m evisuff.experiment_cli run-one \
+            configs/gemini_smoke.local.json \
+            --case-index 0 \
+            --system-index 0 \
+            --condition generalist \
+            --repetition 0 \
+            --output-root results/provider_smoke \
+            --overwrite | tee results/provider_smoke/console_report.json
+
+      - name: Show and validate safe score summary
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          scores = list(Path("results/provider_smoke").glob("**/score.json"))
+          if not scores:
+              raise SystemExit("No score.json was produced")
+          report = json.loads(scores[0].read_text(encoding="utf-8"))
+          safe_keys = (
+              "system_id",
+              "condition",
+              "status",
+              "component_score",
+              "coordination_score",
+              "workflow_score",
+              "composition_gap",
+              "enterprise_success",
+              "total_input_tokens",
+              "total_output_tokens",
+              "estimated_cost_usd",
+              "error",
+          )
+          print(json.dumps({key: report.get(key) for key in safe_keys}, indent=2))
+          if report.get("status") != "completed":
+              raise SystemExit("Gemini returned a workflow result that could not be scored")
+          PY
+
+      - name: Upload smoke-test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-provider-smoke-${{ github.run_id }}
+          path: |
+            results/provider_smoke/
+            configs/gemini_smoke.local.json
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,0 +1,61 @@
+{
+  "case_count": 3,
+  "cases": [
+    {
+      "case_id": "reddit_2024",
+      "changed_facts": [
+        "price_per_share_usd",
+        "primary_shares_m"
+      ],
+      "changed_risks": [
+        "ftc_data_licensing_inquiry"
+      ],
+      "documents": 3,
+      "errors": [],
+      "evidence_items": 17,
+      "issuer": "Reddit, Inc.",
+      "source_versions": 2,
+      "ticker": "RDDT",
+      "valid": true,
+      "workflow_id": "reddit-ipo-closing-update-2024-v1"
+    },
+    {
+      "case_id": "rubrik_2024",
+      "changed_facts": [
+        "primary_shares_m"
+      ],
+      "changed_risks": [],
+      "documents": 3,
+      "errors": [],
+      "evidence_items": 18,
+      "issuer": "Rubrik, Inc.",
+      "source_versions": 2,
+      "ticker": "RBRK",
+      "valid": true,
+      "workflow_id": "rubrik-ipo-greenshoe-update-2024-v1"
+    },
+    {
+      "case_id": "coreweave_2025",
+      "changed_facts": [
+        "price_per_share_usd",
+        "primary_shares_m",
+        "existing_shares_m"
+      ],
+      "changed_risks": [],
+      "documents": 2,
+      "errors": [],
+      "evidence_items": 18,
+      "issuer": "CoreWeave, Inc.",
+      "source_versions": 2,
+      "ticker": "CRWV",
+      "valid": true,
+      "workflow_id": "coreweave-ipo-repricing-2025-v1"
+    }
+  ],
+  "dataset_id": "ipo-real-cases-v1",
+  "document_count": 8,
+  "errors": [],
+  "evidence_item_count": 53,
+  "result_type": "real_ipo_case_validation_not_model_results",
+  "valid": true
+}

@@ -1,0 +1,118 @@
+{
+  "result_type": "single_model_two_case_openrouter_stateful_multi_agent_replication_not_final_paper_results",
+  "provider": "openrouter",
+  "model": "openai/gpt-oss-20b:free",
+  "executed_on": "2026-07-30",
+  "condition": "staged_multi_agent",
+  "repetitions_per_case": 1,
+  "planned_calls": 16,
+  "successful_calls": 16,
+  "hidden_retries": 0,
+  "estimated_cost_usd": 0.0,
+  "cases": [
+    {
+      "case": "coreweave_2025",
+      "workflow_id": "coreweave-ipo-repricing-2025-v1",
+      "status": "completed",
+      "reportable": true,
+      "initial_version": "v1",
+      "final_version": "v2",
+      "round1_workflow_score": 0.96625,
+      "workflow_score": 0.96625,
+      "component_score": 0.94375,
+      "coordination_score": 1.0,
+      "composition_gap": -0.0225,
+      "enterprise_success": false,
+      "update_success": false,
+      "stale_artifacts_after_update": [],
+      "changed_artifacts": ["diligence", "valuation", "risk", "memo"],
+      "call_count": 8,
+      "input_tokens": 10018,
+      "output_tokens": 4717,
+      "recommendation": "proceed_with_conditions",
+      "critical_failures": [
+        {
+          "check": "valuation.output.dilution_pct",
+          "observed": 0.0788,
+          "expected_approximately": 7.884086,
+          "diagnosis": "The valuation specialist emitted the decimal fraction rather than percentage points."
+        },
+        {
+          "check": "memo.metric.dilution_pct",
+          "observed": 0.0788,
+          "expected_approximately": 7.884086,
+          "diagnosis": "The memo propagated the same incorrect unit consistently, so coordination remained perfect while enterprise success failed."
+        }
+      ],
+      "round1_note": "The same unit error was already present in round 1: 0.0996 was emitted where approximately 9.96 percentage points were expected."
+    },
+    {
+      "case": "rubrik_2024",
+      "workflow_id": "rubrik-ipo-greenshoe-update-2024-v1",
+      "status": "completed",
+      "reportable": true,
+      "initial_version": "v1",
+      "final_version": "v2",
+      "round1_workflow_score": 1.0,
+      "workflow_score": 0.9325,
+      "component_score": 0.8875,
+      "coordination_score": 1.0,
+      "composition_gap": -0.045,
+      "enterprise_success": false,
+      "update_success": false,
+      "stale_artifacts_after_update": [],
+      "changed_artifacts": ["diligence", "valuation", "risk", "memo"],
+      "call_count": 8,
+      "input_tokens": 10358,
+      "output_tokens": 5512,
+      "recommendation": "proceed_with_conditions",
+      "critical_failures": [
+        {
+          "check": "valuation.output.gross_proceeds_usd_m",
+          "observed": 862.411264,
+          "expected": 863.112064,
+          "absolute_error_usd_m": -0.7008,
+          "diagnosis": "The amendment was ingested correctly, but the valuation specialist introduced a new multiplication error."
+        },
+        {
+          "check": "valuation.output.post_money_equity_value_usd_m",
+          "observed": 5741.042048,
+          "expected": 5740.942848,
+          "absolute_error_usd_m": 0.0992,
+          "diagnosis": "The updated post-money calculation drifted despite correct source inputs."
+        },
+        {
+          "check": "memo.metric.gross_proceeds_usd_m",
+          "observed": 862.411264,
+          "expected": 863.112064,
+          "diagnosis": "The downstream memo propagated the valuation arithmetic error exactly."
+        },
+        {
+          "check": "memo.metric.post_money_equity_value_usd_m",
+          "observed": 5741.042048,
+          "expected": 5740.942848,
+          "diagnosis": "The downstream memo propagated the second valuation arithmetic error exactly."
+        }
+      ],
+      "amendment_regression": "Round 1 achieved workflow score 1.0. After the v2 greenshoe update, freshness and handoffs remained correct but new arithmetic errors reduced the score to 0.9325 and caused enterprise failure."
+    }
+  ],
+  "cross_case_observations": {
+    "reportable_runs": "2/2",
+    "enterprise_successes": "0/2",
+    "coordination_score": "1.0 for both cases",
+    "freshness": "Both runs updated all four artifacts and left no stale v1 artifact.",
+    "risk_handling": "Both runs preserved the complete supported risk set without unsupported additions.",
+    "dominant_result": "Perfect handoff consistency can coexist with enterprise failure when the shared calculation or unit is wrong.",
+    "stateful_result": "Rubrik demonstrates a direct static-to-stateful regression: a perfect round-1 workflow failed after a legitimate amendment despite correct evidence freshness."
+  },
+  "github_actions": {
+    "run_id": 30514318404,
+    "job_id": 90780693585,
+    "artifact_id": 8748389723,
+    "artifact_name": "openrouter-multicase-post-reset-30514318404",
+    "artifact_digest": "sha256:680423a8c92f7a919537644f82ad736458a3d5f53df8a8d15b1824c70aeda026",
+    "benchmark_head_sha": "dcd662583e2acc93bdb533b1ab3ad2baab8552a5"
+  },
+  "claim_boundary": "These are natural pilot results for one free model, one multi-agent architecture, two IPO cases, and one repetition per case. They are not a leaderboard or a paper-grade population estimate, but they provide two concrete and auditable compositional failure modes."
+}

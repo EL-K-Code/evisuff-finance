@@ -1,0 +1,175 @@
+{
+  "workflow_id": "reddit-ipo-closing-update-2024-v1",
+  "issuer": "Reddit, Inc.",
+  "ticker": "RDDT",
+  "cik": "0001713445",
+  "required_source_version": "v2",
+  "required_scenario_id": "base_case",
+  "allowed_scenarios": [
+    "base_case"
+  ],
+  "departments": [
+    "due_diligence",
+    "valuation",
+    "risk",
+    "ecm_committee"
+  ],
+  "annotation_status": "single_researcher_verified_against_official_sec_sources_second_review_pending",
+  "source_packet": {
+    "packet_type": "official_sec_evidence_packet",
+    "issuer": "Reddit, Inc.",
+    "required_facts": [
+      "price_per_share_usd",
+      "primary_shares_m",
+      "existing_shares_m",
+      "debt_usd_m",
+      "cash_usd_m"
+    ],
+    "chronology_rule": "Use the latest packet version. The March 25 closing update supersedes preliminary pricing assumptions and includes the FTC inquiry disclosed after Reddit received the March 14 letter.",
+    "versions": [
+      {
+        "version_id": "v1",
+        "document_id": "REDDIT-PRICING-PACKET-20240311",
+        "as_of": "2024-03-11",
+        "documents": [
+          {
+            "form_type": "S-1/A",
+            "accession": "0001628280-24-010137",
+            "url": "https://www.sec.gov/Archives/edgar/data/1713445/000162828024010137/reddit-sx1a1.htm"
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "offer_price",
+            "text": "The assumed IPO price is $32.50 per share, the midpoint of the estimated range."
+          },
+          {
+            "evidence_id": "primary_shares",
+            "text": "Reddit planned to sell 15,276,527 primary shares."
+          },
+          {
+            "evidence_id": "existing_shares",
+            "text": "Existing stockholders held 143,707,045 shares before the offering."
+          },
+          {
+            "evidence_id": "cash",
+            "text": "Cash, cash equivalents, and marketable securities were $1,213.122 million at December 31, 2023."
+          },
+          {
+            "evidence_id": "debt",
+            "text": "The $750 million revolver had $745.1 million available and $4.9 million of letters of credit; no funded debt balance is used in this case."
+          },
+          {
+            "evidence_id": "risk_advertising",
+            "risk_id": "advertising_dependence",
+            "text": "Revenue depends heavily on advertising demand and advertiser relationships."
+          },
+          {
+            "evidence_id": "risk_content",
+            "risk_id": "content_moderation",
+            "text": "User-generated content and content moderation can create legal, reputational, and engagement risks."
+          },
+          {
+            "evidence_id": "risk_control",
+            "risk_id": "dual_class_control",
+            "text": "The dual-class structure concentrates voting control with Class B holders."
+          }
+        ]
+      },
+      {
+        "version_id": "v2",
+        "document_id": "REDDIT-CLOSING-PACKET-20240325",
+        "as_of": "2024-03-25",
+        "documents": [
+          {
+            "form_type": "424B4",
+            "accession": "0001628280-24-012380",
+            "url": "https://www.sec.gov/Archives/edgar/data/1713445/000162828024012380/reddit-final424b4.htm"
+          },
+          {
+            "form_type": "8-K",
+            "accession": "0001628280-24-012880",
+            "url": "https://www.sec.gov/Archives/edgar/data/1713445/000162828024012880/reddit-8xk.htm"
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "offer_price",
+            "text": "The final IPO price was $34.00 per share."
+          },
+          {
+            "evidence_id": "primary_shares",
+            "text": "At closing, Reddit sold 18,576,527 primary shares, including the underwriters' 3,300,000-share option."
+          },
+          {
+            "evidence_id": "existing_shares",
+            "text": "Existing stockholders held 143,707,045 shares before the offering."
+          },
+          {
+            "evidence_id": "cash",
+            "text": "Cash, cash equivalents, and marketable securities were $1,213.122 million at December 31, 2023."
+          },
+          {
+            "evidence_id": "debt",
+            "text": "The $750 million revolver had $745.1 million available and $4.9 million of letters of credit; no funded debt balance is used in this case."
+          },
+          {
+            "evidence_id": "risk_advertising",
+            "risk_id": "advertising_dependence",
+            "text": "Revenue depends heavily on advertising demand and advertiser relationships."
+          },
+          {
+            "evidence_id": "risk_content",
+            "risk_id": "content_moderation",
+            "text": "User-generated content and content moderation can create legal, reputational, and engagement risks."
+          },
+          {
+            "evidence_id": "risk_control",
+            "risk_id": "dual_class_control",
+            "text": "The dual-class structure concentrates voting control with Class B holders."
+          },
+          {
+            "evidence_id": "risk_ftc_data_licensing",
+            "risk_id": "ftc_data_licensing_inquiry",
+            "text": "After receiving a March 14, 2024 letter, Reddit disclosed a non-public FTC inquiry into the sale, licensing, or sharing of user-generated content with third parties to train AI models; the inquiry could create costs, reputational harm, fines, or required business changes."
+          }
+        ]
+      }
+    ]
+  },
+  "versions": {
+    "v1": {
+      "document_id": "REDDIT-PRICING-PACKET-20240311",
+      "form_type": "S-1/A",
+      "facts": {
+        "price_per_share_usd": 32.5,
+        "primary_shares_m": 15.276527,
+        "existing_shares_m": 143.707045,
+        "debt_usd_m": 0.0,
+        "cash_usd_m": 1213.122
+      },
+      "risk_flags": [
+        "advertising_dependence",
+        "content_moderation",
+        "dual_class_control"
+      ]
+    },
+    "v2": {
+      "document_id": "REDDIT-CLOSING-PACKET-20240325",
+      "form_type": "424B4+8-K",
+      "facts": {
+        "price_per_share_usd": 34.0,
+        "primary_shares_m": 18.576527,
+        "existing_shares_m": 143.707045,
+        "debt_usd_m": 0.0,
+        "cash_usd_m": 1213.122
+      },
+      "risk_flags": [
+        "advertising_dependence",
+        "content_moderation",
+        "dual_class_control",
+        "ftc_data_licensing_inquiry"
+      ]
+    }
+  }
+}

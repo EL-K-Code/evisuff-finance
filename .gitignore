@@ -33,6 +33,10 @@ paper/main.pdf
 .env
 .env.*
 !sample.env
+configs/*.local.json
 data/raw/
 data/private/
 results/private/
+results/ipo_empirical/
+results/empirical_dry_run/
+results/provider_smoke/

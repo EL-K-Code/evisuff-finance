@@ -1,0 +1,169 @@
+{
+  "result_type": "single_model_three_case_three_architecture_stateful_descriptive_matrix_not_final_paper_results",
+  "provider": "openrouter",
+  "model": "openai/gpt-oss-20b:free",
+  "cases": ["reddit_2024", "coreweave_2025", "rubrik_2024"],
+  "conditions": ["staged_generalist", "staged_isolated", "staged_multi_agent"],
+  "selected_matrix_policy": "Use the planned reportable repetition when available. Reddit multi-agent uses the only reportable run, an explicitly unplanned robustness repetition, because the planned attempt was non-reportable after a schema-contract failure.",
+  "cells": [
+    {
+      "case": "reddit_2024",
+      "condition": "staged_generalist",
+      "provenance": "planned",
+      "round1_workflow_score": 1.0,
+      "workflow_score": 1.0,
+      "component_score": 1.0,
+      "coordination_score": 1.0,
+      "composition_gap": 0.0,
+      "enterprise_success": true,
+      "update_success": true,
+      "primary_failure": null
+    },
+    {
+      "case": "reddit_2024",
+      "condition": "staged_isolated",
+      "provenance": "planned_attempt_0",
+      "round1_workflow_score": 0.924145,
+      "workflow_score": 0.924145,
+      "component_score": 0.94375,
+      "coordination_score": 0.894737,
+      "composition_gap": 0.019605,
+      "enterprise_success": false,
+      "update_success": false,
+      "primary_failure": "dilution_pct emitted as a decimal fraction; the memo also discarded the net-cash position and disagreed with the valuation handoff."
+    },
+    {
+      "case": "reddit_2024",
+      "condition": "staged_multi_agent",
+      "provenance": "unplanned_robustness_attempt_1",
+      "round1_workflow_score": 0.96625,
+      "workflow_score": 0.96625,
+      "component_score": 0.94375,
+      "coordination_score": 1.0,
+      "composition_gap": -0.0225,
+      "enterprise_success": false,
+      "update_success": false,
+      "primary_failure": "The valuation agent emitted dilution as a decimal fraction and the memo propagated the same wrong unit perfectly."
+    },
+    {
+      "case": "coreweave_2025",
+      "condition": "staged_generalist",
+      "provenance": "planned",
+      "round1_workflow_score": 0.94,
+      "workflow_score": 1.0,
+      "component_score": 1.0,
+      "coordination_score": 1.0,
+      "composition_gap": 0.0,
+      "round1_enterprise_success": false,
+      "enterprise_success": true,
+      "update_success": true,
+      "primary_failure": null,
+      "stateful_transition": "The v2 amendment corrected round-1 share-scale errors and produced a perfect final workflow."
+    },
+    {
+      "case": "coreweave_2025",
+      "condition": "staged_isolated",
+      "provenance": "planned",
+      "round1_workflow_score": 1.0,
+      "workflow_score": 0.920395,
+      "component_score": 0.9375,
+      "coordination_score": 0.894737,
+      "composition_gap": 0.017105,
+      "enterprise_success": false,
+      "update_success": false,
+      "primary_failure": "The memo overrode correct valuation handoffs, replacing 1463.6 million USD and 7.8823 percent with 1500.0 million USD and 8.08 percent."
+    },
+    {
+      "case": "coreweave_2025",
+      "condition": "staged_multi_agent",
+      "provenance": "planned",
+      "round1_workflow_score": 0.96625,
+      "workflow_score": 0.96625,
+      "component_score": 0.94375,
+      "coordination_score": 1.0,
+      "composition_gap": -0.0225,
+      "enterprise_success": false,
+      "update_success": false,
+      "primary_failure": "The valuation agent emitted dilution as 0.0788 rather than about 7.884 percentage points and the memo propagated it exactly."
+    },
+    {
+      "case": "rubrik_2024",
+      "condition": "staged_generalist",
+      "provenance": "planned",
+      "round1_workflow_score": 1.0,
+      "workflow_score": 0.96625,
+      "component_score": 0.94375,
+      "coordination_score": 1.0,
+      "composition_gap": -0.0225,
+      "enterprise_success": false,
+      "update_success": false,
+      "primary_failure": "The generalist calculated gross proceeds as 862.411264 million USD instead of 863.112064 million USD and propagated the error to the memo."
+    },
+    {
+      "case": "rubrik_2024",
+      "condition": "staged_isolated",
+      "provenance": "planned",
+      "round1_workflow_score": 1.0,
+      "workflow_score": 1.0,
+      "component_score": 1.0,
+      "coordination_score": 1.0,
+      "composition_gap": 0.0,
+      "enterprise_success": true,
+      "update_success": true,
+      "primary_failure": null
+    },
+    {
+      "case": "rubrik_2024",
+      "condition": "staged_multi_agent",
+      "provenance": "planned",
+      "round1_workflow_score": 1.0,
+      "workflow_score": 0.9325,
+      "component_score": 0.8875,
+      "coordination_score": 1.0,
+      "composition_gap": -0.045,
+      "enterprise_success": false,
+      "update_success": false,
+      "primary_failure": "The valuation agent introduced gross-proceeds and post-money arithmetic errors after the amendment and the memo propagated both."
+    }
+  ],
+  "descriptive_aggregates": {
+    "reportable_cells": "9/9 selected cells",
+    "final_enterprise_successes": "3/9",
+    "enterprise_success_by_condition": {
+      "staged_generalist": "2/3",
+      "staged_isolated": "1/3",
+      "staged_multi_agent": "0/3"
+    },
+    "mean_workflow_score_by_condition": {
+      "staged_generalist": 0.98875,
+      "staged_isolated": 0.94818,
+      "staged_multi_agent": 0.955
+    },
+    "perfect_coordination_but_enterprise_failure_cells": [
+      "reddit_2024/staged_multi_agent",
+      "coreweave_2025/staged_multi_agent",
+      "rubrik_2024/staged_generalist",
+      "rubrik_2024/staged_multi_agent"
+    ],
+    "stale_final_artifacts": "0 across all selected reportable cells",
+    "dominant_failure_families": [
+      "percentage-versus-decimal unit confusion",
+      "arithmetic drift after a filing amendment",
+      "downstream memo overriding a correct handoff"
+    ]
+  },
+  "main_observations": [
+    "Evidence freshness was not the dominant bottleneck: all selected cells revised the four artifacts and left no stale v1 artifact.",
+    "Perfect coordination did not imply enterprise validity when agents shared the same wrong value.",
+    "Architecture effects were case-dependent: the generalist was uniquely successful on CoreWeave, while isolated departments were uniquely successful on Rubrik.",
+    "A state update can either repair an earlier error, as in CoreWeave generalist, or create a new failure after a perfect first round, as in Rubrik generalist and multi-agent.",
+    "The identical Rubrik gross-proceeds error in generalist and multi-agent runs suggests a model-level arithmetic failure that is not specific to one orchestration design."
+  ],
+  "source_result_files": [
+    "results/openrouter_stateful_reddit_generalist_pilot.json",
+    "results/openrouter_stateful_reddit_architecture_pilot.json",
+    "results/openrouter_stateful_coreweave_rubrik_multi_agent_post_reset.json",
+    "results/openrouter_stateful_coreweave_rubrik_generalist_isolated.json"
+  ],
+  "claim_boundary": "This is a descriptive pilot matrix for one free model and mostly one repetition per cell. Reddit multi-agent comes from an unplanned robustness repetition. Means and success rates are descriptive only; repeated preregistered runs and uncertainty intervals are required before paper-grade comparative claims."
+}

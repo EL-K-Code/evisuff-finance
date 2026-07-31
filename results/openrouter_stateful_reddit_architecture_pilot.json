@@ -1,0 +1,185 @@
+{
+  "result_type": "single_model_single_case_openrouter_stateful_architecture_pilot_not_final_paper_results",
+  "provider": "openrouter",
+  "model": "openai/gpt-oss-20b:free",
+  "case": "reddit_2024",
+  "workflow_id": "reddit-ipo-closing-update-2024-v1",
+  "initial_version": "v1",
+  "final_version": "v2",
+  "frozen_design": {
+    "conditions": [
+      "staged_generalist",
+      "staged_isolated",
+      "staged_multi_agent"
+    ],
+    "planned_repetitions": 1,
+    "calls_per_condition": {
+      "staged_generalist": 2,
+      "staged_isolated": 8,
+      "staged_multi_agent": 8
+    }
+  },
+  "generalist_reference": {
+    "repetition": 0,
+    "status": "completed",
+    "reportable": true,
+    "round1_workflow_score": 1.0,
+    "workflow_score": 1.0,
+    "component_score": 1.0,
+    "coordination_score": 1.0,
+    "composition_gap": 0.0,
+    "enterprise_success": true,
+    "update_success": true,
+    "stale_artifacts_after_update": [],
+    "call_count": 2,
+    "input_tokens": 3368,
+    "output_tokens": 3135,
+    "github_actions": {
+      "run_id": 30452058530,
+      "artifact_id": 8723974617,
+      "artifact_digest": "sha256:d550648478682a66ba7745be4b61387e3cdee72adecb4e90d161f73ac7fa7b44"
+    }
+  },
+  "architecture_attempts": [
+    {
+      "attempt": 0,
+      "planned": true,
+      "github_actions": {
+        "run_id": 30453478117,
+        "artifact_id": 8724798689,
+        "artifact_digest": "sha256:b61e9024dee93720943706c9876997e86f7237acc459f6b6e0cb6e7491cc4d1d"
+      },
+      "conditions": [
+        {
+          "condition": "staged_isolated",
+          "status": "completed",
+          "reportable": true,
+          "round1_workflow_score": 0.924145,
+          "workflow_score": 0.924145,
+          "component_score": 0.94375,
+          "coordination_score": 0.894737,
+          "composition_gap": 0.019605,
+          "enterprise_success": false,
+          "update_success": false,
+          "stale_artifacts_after_update": [],
+          "call_count": 8,
+          "input_tokens": 8464,
+          "output_tokens": 6080,
+          "critical_failures": [
+            {
+              "check": "valuation.output.dilution_pct",
+              "observed": 0.1145,
+              "expected_approximately": 11.447,
+              "diagnosis": "The percentage was emitted as a decimal fraction."
+            },
+            {
+              "check": "memo.metric.net_debt_usd_m",
+              "observed": 0.0,
+              "expected": -1213.122,
+              "diagnosis": "The memo discarded the valuation team's net-cash position."
+            },
+            {
+              "check": "handoff.valuation_to_memo.dilution_pct",
+              "valuation_value": 0.1145,
+              "memo_value": 11.45,
+              "diagnosis": "The memo corrected the scale locally but no longer matched the valuation handoff."
+            }
+          ]
+        },
+        {
+          "condition": "staged_multi_agent",
+          "status": "failed",
+          "reportable": false,
+          "enterprise_success": null,
+          "update_success": null,
+          "workflow_score": null,
+          "error": "ValueError: Unknown source_version: REDDIT-PRICING-PACKET-20240311",
+          "diagnosis": "A model-produced department artifact used a packet identifier where the benchmark required the public workflow version v1 or v2. No zero score should be reported for this attempt."
+        }
+      ]
+    },
+    {
+      "attempt": 1,
+      "planned": false,
+      "reason": "A delayed second GitHub pull-request event started before the connector exposed either run. It is retained as an unplanned robustness repetition, not presented as a preregistered replicate.",
+      "github_actions": {
+        "run_id": 30453739266,
+        "artifact_id": 8724913921,
+        "artifact_digest": "sha256:96ea635f7ce41d3be7a2324ccd45e395d5650927ebb7153b3316dfb79c8c540c"
+      },
+      "conditions": [
+        {
+          "condition": "staged_isolated",
+          "status": "completed",
+          "reportable": true,
+          "round1_workflow_score": 0.963947,
+          "workflow_score": 0.963947,
+          "component_score": 0.975,
+          "coordination_score": 0.947368,
+          "composition_gap": 0.011053,
+          "enterprise_success": false,
+          "update_success": false,
+          "stale_artifacts_after_update": [],
+          "call_count": 8,
+          "input_tokens": 8529,
+          "output_tokens": 6913,
+          "critical_failures": [
+            {
+              "check": "valuation.output.dilution_pct",
+              "observed": 0.11447,
+              "expected_approximately": 11.447,
+              "diagnosis": "The percentage was emitted as a decimal fraction."
+            },
+            {
+              "check": "handoff.valuation_to_memo.dilution_pct",
+              "valuation_value": 0.11447,
+              "memo_value": 11.45,
+              "diagnosis": "The isolated memo corrected the scale but disagreed with the valuation artifact."
+            }
+          ]
+        },
+        {
+          "condition": "staged_multi_agent",
+          "status": "completed",
+          "reportable": true,
+          "round1_workflow_score": 0.96625,
+          "workflow_score": 0.96625,
+          "component_score": 0.94375,
+          "coordination_score": 1.0,
+          "composition_gap": -0.0225,
+          "enterprise_success": false,
+          "update_success": false,
+          "stale_artifacts_after_update": [],
+          "call_count": 8,
+          "input_tokens": 10379,
+          "output_tokens": 4655,
+          "critical_failures": [
+            {
+              "check": "valuation.output.dilution_pct",
+              "observed": 0.1145,
+              "expected_approximately": 11.447,
+              "diagnosis": "The valuation specialist emitted a decimal fraction instead of percentage points."
+            },
+            {
+              "check": "memo.metric.dilution_pct",
+              "observed": 0.1145,
+              "expected_approximately": 11.447,
+              "diagnosis": "The downstream memo propagated the same incorrect unit consistently."
+            }
+          ],
+          "interpretation": "Coordination scored 1.0 because the handoff was internally consistent, but enterprise success remained false because the shared value was materially wrong."
+        }
+      ]
+    }
+  ],
+  "cross_condition_observations": {
+    "generalist_enterprise_successes": "1/1",
+    "isolated_enterprise_successes": "0/2 reportable attempts",
+    "multi_agent_enterprise_successes": "0/1 reportable attempt, with 1 additional non-reportable attempt",
+    "freshness": "All reportable architecture attempts updated all four artifacts and left no stale v1 artifact.",
+    "risk_update": "All reportable attempts added ftc_data_licensing_inquiry and propagated the public risk set.",
+    "dominant_failure": "Unit semantics for dilution_pct: the model repeatedly confused decimal fractions with percentage points.",
+    "coordination_warning": "A perfect coordination score can coexist with enterprise failure when agents propagate the same wrong value."
+  },
+  "claim_boundary": "This is a small engineering and scientific pilot for one free model and one IPO case. The second architecture attempt was unplanned, and the results are not a leaderboard or paper-grade estimate. They do provide concrete natural failure modes for the benchmark and motivate repeated, preregistered runs."
+}

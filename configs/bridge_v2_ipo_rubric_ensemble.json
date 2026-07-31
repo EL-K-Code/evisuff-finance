@@ -1,0 +1,65 @@
+{
+  "ensemble_id": "evisuff-bridge-v2-ipo-public-answer-ensemble",
+  "created_at": "2026-07-31",
+  "status": "frozen_before_rubric_induction_and_evaluated_model_inference",
+  "source_repository": "benstaf/ipoagent",
+  "source_commit_sha": "091f06913e39738ef464ac3548ad4b533ac47c50",
+  "purpose": "Use the five public answer sets referenced by the pinned IPO Finance Agent rubric orchestrator to reproduce fact extraction, consolidation, and rubric induction for the 12 frozen public SpaceX questions.",
+  "generation_policy": {
+    "new_answer_generation_required": false,
+    "reuse_public_author_answer_sets": true,
+    "selected_questions_only": true,
+    "selected_question_manifest": "configs/bridge_v2_ipo_agent_items.json",
+    "answer_sets_excluded_from_evaluated_model_scores": true
+  },
+  "answer_sets": [
+    {
+      "ensemble_slot": "glm51",
+      "reported_model_label": "GLM-5.1",
+      "path": "results/glm-5.1-public-spacex-70-20260606-191748.json",
+      "git_blob_sha": "a7d481ec34e8be5ec576edfd14014ad0bc6e8e53",
+      "public_question_count_expected": 70
+    },
+    {
+      "ensemble_slot": "glm52",
+      "reported_model_label": "GLM-5.2",
+      "path": "results/glm-5.2-public-spacex-70-20260624-153058.json",
+      "git_blob_sha": "4ec2c019aacb21ab13cff4e01d057f3ee3f49a11",
+      "public_question_count_expected": 70
+    },
+    {
+      "ensemble_slot": "qwen",
+      "reported_model_label": "Qwen3.7-Max",
+      "path": "results/qwen3.7-max-public-spacex-70-20260609-134629.json",
+      "git_blob_sha": "8094c492bbdacae360ddc42b43810a974c0a66d1",
+      "public_question_count_expected": 70
+    },
+    {
+      "ensemble_slot": "kimi",
+      "reported_model_label": "Kimi-K2.6",
+      "path": "results/moonshotai-Kimi-K2.6-public-spacex-70-20260608-060803.json",
+      "git_blob_sha": "260da7a4bcc1f5ff90defa6cdfdb1efc55e33dbf",
+      "public_question_count_expected": 70
+    },
+    {
+      "ensemble_slot": "mimo",
+      "reported_model_label": "MiMo-v2.5-Pro",
+      "path": "results/mimo-v2.5-pro-public-spacex-70-20260610-142205.json",
+      "git_blob_sha": "924946d60c2f87fdc37819ccc756d2103d67a8d6",
+      "public_question_count_expected": 70
+    }
+  ],
+  "frozen_pipeline_parameters": {
+    "minimum_fact_agreement": 2,
+    "maximum_enrichment_iterations": 5,
+    "maximum_repair_iterations": 5,
+    "rubric_pipeline_temperature": 0.0
+  },
+  "integrity_requirements": {
+    "verify_each_file_at_pinned_commit": true,
+    "verify_70_questions_per_file": true,
+    "verify_question_text_matches_frozen_manifest": true,
+    "preserve_source_answers_without_edits": true
+  },
+  "model_calls_completed_for_answer_set_generation_in_this_project": 0
+}

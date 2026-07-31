@@ -1,0 +1,181 @@
+{
+  "workflow_id": "rubrik-ipo-greenshoe-update-2024-v1",
+  "issuer": "Rubrik, Inc.",
+  "ticker": "RBRK",
+  "cik": "0001943896",
+  "required_source_version": "v2",
+  "required_scenario_id": "base_case",
+  "allowed_scenarios": [
+    "base_case"
+  ],
+  "departments": [
+    "due_diligence",
+    "valuation",
+    "risk",
+    "ecm_committee"
+  ],
+  "annotation_status": "single_researcher_verified_against_official_sec_sources_second_review_pending",
+  "source_packet": {
+    "packet_type": "official_sec_evidence_packet",
+    "issuer": "Rubrik, Inc.",
+    "required_facts": [
+      "price_per_share_usd",
+      "primary_shares_m",
+      "existing_shares_m",
+      "debt_usd_m",
+      "cash_usd_m"
+    ],
+    "chronology_rule": "Use the post-IPO update. It adds shares sold through the underwriters' option to the initial 23.5 million primary shares.",
+    "versions": [
+      {
+        "version_id": "v1",
+        "document_id": "RUBRIK-PRICING-PACKET-20240424",
+        "as_of": "2024-04-24",
+        "documents": [
+          {
+            "form_type": "424B4",
+            "accession": "0001193125-24-118478",
+            "url": "https://www.sec.gov/Archives/edgar/data/1943896/000119312524118478/d359771d424b4.htm"
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "offer_price",
+            "text": "The IPO price was $32.00 per share."
+          },
+          {
+            "evidence_id": "primary_shares",
+            "text": "Rubrik offered 23,500,000 primary shares."
+          },
+          {
+            "evidence_id": "existing_shares",
+            "text": "There were 152,432,212 Class B shares outstanding before adding the IPO Class A shares."
+          },
+          {
+            "evidence_id": "cash",
+            "text": "Cash and cash equivalents were $130.031 million at January 31, 2024."
+          },
+          {
+            "evidence_id": "debt",
+            "text": "Rubrik incurred $321.4 million of Bridge Notes in connection with the RSU net settlement."
+          },
+          {
+            "evidence_id": "risk_losses",
+            "risk_id": "operating_losses",
+            "text": "Rubrik had a history of operating losses and might not achieve sustained profitability."
+          },
+          {
+            "evidence_id": "risk_security",
+            "risk_id": "cybersecurity_and_product_failure",
+            "text": "Product failures, vulnerabilities, or security incidents could harm customers and the business."
+          },
+          {
+            "evidence_id": "risk_investigation",
+            "risk_id": "government_investigation",
+            "text": "Rubrik disclosed ongoing government-contract-related investigations and uncertain consequences."
+          },
+          {
+            "evidence_id": "risk_control",
+            "risk_id": "dual_class_control",
+            "text": "Class B shares carry 20 votes each and concentrate voting power."
+          }
+        ]
+      },
+      {
+        "version_id": "v2",
+        "document_id": "RUBRIK-CLOSING-PACKET-20240531",
+        "as_of": "2024-05-31",
+        "documents": [
+          {
+            "form_type": "424B4",
+            "accession": "0001193125-24-118478",
+            "url": "https://www.sec.gov/Archives/edgar/data/1943896/000119312524118478/d359771d424b4.htm"
+          },
+          {
+            "form_type": "10-Q",
+            "accession": "0001943896-24-000030",
+            "url": "https://www.sec.gov/Archives/edgar/data/1943896/000194389624000030/rbrk-20241031.htm"
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "offer_price",
+            "text": "The IPO and option shares were sold at $32.00 per share."
+          },
+          {
+            "evidence_id": "primary_shares",
+            "text": "Rubrik sold 23,500,000 IPO shares plus 3,472,252 additional option shares, totaling 26,972,252 primary shares."
+          },
+          {
+            "evidence_id": "existing_shares",
+            "text": "There were 152,432,212 Class B shares outstanding before adding the IPO Class A shares."
+          },
+          {
+            "evidence_id": "cash",
+            "text": "Cash and cash equivalents were $130.031 million at January 31, 2024."
+          },
+          {
+            "evidence_id": "debt",
+            "text": "Rubrik incurred $321.4 million of Bridge Notes in connection with the RSU net settlement."
+          },
+          {
+            "evidence_id": "risk_losses",
+            "risk_id": "operating_losses",
+            "text": "Rubrik had a history of operating losses and might not achieve sustained profitability."
+          },
+          {
+            "evidence_id": "risk_security",
+            "risk_id": "cybersecurity_and_product_failure",
+            "text": "Product failures, vulnerabilities, or security incidents could harm customers and the business."
+          },
+          {
+            "evidence_id": "risk_investigation",
+            "risk_id": "government_investigation",
+            "text": "Rubrik disclosed ongoing government-contract-related investigations and uncertain consequences."
+          },
+          {
+            "evidence_id": "risk_control",
+            "risk_id": "dual_class_control",
+            "text": "Class B shares carry 20 votes each and concentrate voting power."
+          }
+        ]
+      }
+    ]
+  },
+  "versions": {
+    "v1": {
+      "document_id": "RUBRIK-PRICING-PACKET-20240424",
+      "form_type": "424B4",
+      "facts": {
+        "price_per_share_usd": 32.0,
+        "primary_shares_m": 23.5,
+        "existing_shares_m": 152.432212,
+        "debt_usd_m": 321.4,
+        "cash_usd_m": 130.031
+      },
+      "risk_flags": [
+        "operating_losses",
+        "cybersecurity_and_product_failure",
+        "government_investigation",
+        "dual_class_control"
+      ]
+    },
+    "v2": {
+      "document_id": "RUBRIK-CLOSING-PACKET-20240531",
+      "form_type": "424B4+10-Q",
+      "facts": {
+        "price_per_share_usd": 32.0,
+        "primary_shares_m": 26.972252,
+        "existing_shares_m": 152.432212,
+        "debt_usd_m": 321.4,
+        "cash_usd_m": 130.031
+      },
+      "risk_flags": [
+        "operating_losses",
+        "cybersecurity_and_product_failure",
+        "government_investigation",
+        "dual_class_control"
+      ]
+    }
+  }
+}

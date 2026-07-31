@@ -1,0 +1,75 @@
+{
+  "result_type": "single_model_single_case_stateful_pilot_not_final_paper_results",
+  "model": {
+    "provider": "Google Gemini API",
+    "model_id": "gemini-3.6-flash",
+    "temperature": 0.0,
+    "reasoning_effort": "low",
+    "structured_output": "strict_json_schema"
+  },
+  "case": {
+    "case_id": "reddit_2024",
+    "workflow_id": "reddit-ipo-closing-update-2024-v1",
+    "initial_version": "v1",
+    "final_version": "v2",
+    "condition": "staged_generalist"
+  },
+  "execution": {
+    "github_actions_run_id": 30448900462,
+    "workflow_head_sha": "03953d2729b3968da143a8cc90903ce98819deb9",
+    "artifact_id": 8722641724,
+    "artifact_sha256": "171636a3de7f06b2453d29f42e1f23b9dba89e446b0c69035ce487af004f5029",
+    "call_count": 2,
+    "input_tokens": 3996,
+    "output_tokens": 2026,
+    "cost_recorded_usd": 0.0
+  },
+  "scores": {
+    "round1_workflow_score": 1.0,
+    "final_component_score": 1.0,
+    "final_coordination_score": 1.0,
+    "final_workflow_score": 1.0,
+    "composition_gap": 0.0,
+    "round1_enterprise_success": true,
+    "final_enterprise_success": true,
+    "update_success": true,
+    "stale_artifacts_after_update": []
+  },
+  "observed_revision": {
+    "changed_artifacts": [
+      "diligence",
+      "valuation",
+      "risk",
+      "memo"
+    ],
+    "price_per_share_usd": {
+      "round1": 32.5,
+      "final": 34.0
+    },
+    "primary_shares_m": {
+      "round1": 15.276527,
+      "final": 18.576527
+    },
+    "gross_proceeds_usd_m": {
+      "round1": 496.4871275,
+      "final": 631.601918
+    },
+    "dilution_pct": {
+      "round1": 9.608928099859266,
+      "final": 11.446864104273201
+    },
+    "new_risk_added": "ftc_data_licensing_inquiry",
+    "risk_propagated_to_final_memo": true,
+    "recommendation": {
+      "round1": "proceed",
+      "final": "proceed_with_conditions"
+    },
+    "final_memo_uses_only_latest_packet_citations": true
+  },
+  "claim_boundary": {
+    "architecture_comparison_supported": false,
+    "leaderboard_claim_supported": false,
+    "paper_grade_claim_supported": false,
+    "reason": "This is one model, one IPO case, one orchestration condition, and one repetition. It validates the stateful provider path and supplies an engineering pilot result, not a paper-scale comparison."
+  }
+}

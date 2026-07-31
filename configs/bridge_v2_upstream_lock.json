@@ -1,0 +1,129 @@
+{
+  "lock_id": "evisuff-benchmark-bridge-v2-upstream-lock",
+  "created_at": "2026-07-30",
+  "status": "exact_model_and_judge_routes_frozen_funding_and_final_rubrics_pending",
+  "sources": {
+    "finar_bench": {
+      "repository": "SAIFS-AIHub/FinAR-Bench",
+      "commit_sha": "bd8efe8b265610d409cbcb1a6c09964870b90bc7",
+      "dataset_repository": "SAIFS-AiHub/FinAR-Bench",
+      "dataset_revision": "a75026d0f2302432b7e52463865090f753d02bf6",
+      "test_file_sha256": "94b8143ee3daf7643c654b2497a56b968edd9e7176fa33d2b37d74a39f14d5a9",
+      "test_file_size_bytes": 2386147,
+      "test_file_etag": "a0c77aff5d8dfd31ff50b2556f29f52e5d3344d3",
+      "item_manifest": "configs/bridge_v2_finar_items.json",
+      "item_manifest_sha256": "0a8e38f8ac741be7f91c1618bc68a7c8f6640c47228660d921be15567e6a22a2",
+      "selected_task_ids": [
+        "787460261ddb464aaa6a7e5292997d44",
+        "8b56fa5684814e18aec043cb51429954",
+        "d5dabdf2ac8148968f3847f344e6ab2b",
+        "65a3509ea36540d4b618667ef414de2d",
+        "55377d6835774ea2a7a62de94b9ef52c",
+        "66d106f2fe434caf82adfe809cec5c01",
+        "954007f32bf247c4861b8e982f059547",
+        "13241a9f20af4dbd84844a98063d99a4",
+        "c31ccc957b774c94a2b8233e7274a319",
+        "bc3842dc4e9f4a57a197cc750998b624",
+        "2bd9d13875384d0f954746c50cda703b",
+        "98f2bfd97545469fbec3e8ef686e12d7"
+      ],
+      "lock_complete": true,
+      "remaining_action": null
+    },
+    "ipo_finance_agent": {
+      "repository": "benstaf/ipoagent",
+      "commit_sha": "091f06913e39738ef464ac3548ad4b533ac47c50",
+      "path": "data/public_spacex_70.txt",
+      "git_blob_sha": "c39fac3fd612225c2148fb758c184153564e0abd",
+      "lock_complete": true,
+      "source_file_sha256": "8f08e3ec86ac6317b1f3a18c2c10189703b40fc322bb520a1b50eb6ed22261de",
+      "source_file_size_bytes": 24695,
+      "item_manifest": "configs/bridge_v2_ipo_agent_items.json",
+      "item_manifest_sha256": "f875a8a94f6f5e63f7bd324b91875da1c89fb381cbf94955011555320ea0ad23",
+      "selected_question_positions": [
+        1,
+        2,
+        5,
+        9,
+        12,
+        16,
+        18,
+        19,
+        25,
+        29,
+        35,
+        46
+      ],
+      "questions_materialized": true,
+      "static_public_rubrics_materialized": false,
+      "rubric_protocol": "configs/bridge_v2_ipo_rubric_protocol.json",
+      "rubric_protocol_sha256": "3e3b79ada2de307e35482968a09ace87cc08cef4b20309708473c58a265c206a",
+      "rubric_protocol_resolved": true,
+      "final_rubrics_materialized": false,
+      "reporting_label": "reproduced IPO Finance Agent public subset",
+      "rubric_construction_ensemble": "configs/bridge_v2_ipo_rubric_ensemble.json",
+      "rubric_construction_ensemble_sha256": "1b882e80e81079635e2fd56777d3be274471ec77ed2c8c5f011819e2c346f365",
+      "rubric_construction_answer_sets_frozen": true
+    },
+    "big_finance_bench": {
+      "repository": "Rogo-Technologies/big-finance-benchmark",
+      "commit_sha": "244fb7a4d57e0f6f5ac1d82c50f55c355f49a4bb",
+      "path": "data/big_finance_subset.jsonl",
+      "git_blob_sha": "bc1df35babc3acd7c9363836ac41aa4ba7d37013",
+      "lock_complete": true,
+      "source_file_sha256": "db7026d11fe6ab3ae6512654489c97ebd65ba92f0432963549fe7ad2ec47fb7b",
+      "source_file_size_bytes": 102325,
+      "item_manifest": "configs/bridge_v2_big_finance_items.json",
+      "item_manifest_sha256": "cd870a223ccbcca0dfc9727309b444bb0d8b59761a6857049169ecca583f951a",
+      "selected_item_ids": [
+        "bf-0a8c20169a",
+        "bf-0e2b33b21b",
+        "bf-14e00db503",
+        "bf-20474b5540",
+        "bf-2c01534176",
+        "bf-36d4a10aa8",
+        "bf-37f81aef9b",
+        "bf-39bacf8580",
+        "bf-50f29af2ed",
+        "bf-51844d71db",
+        "bf-55f33faa82",
+        "bf-5b4cd39939"
+      ],
+      "items_and_weighted_rubrics_materialized": true
+    }
+  },
+  "inference_allowed": false,
+  "unlock_rule": "All final rubrics, exact evaluated models, rubric-construction models, judges, tool surfaces, and budgets must be frozen in a new registration commit before any bridge inference.",
+  "remaining_non_source_gates": [
+    "fund OpenRouter paid-model budget or configure direct OpenAI key",
+    "generate, review, and freeze final IPO rubrics",
+    "freeze tool surfaces",
+    "approve evaluated, rubric-construction, and judge call budgets",
+    "create a new V2 registration branch"
+  ],
+  "model_panel": {
+    "path": "configs/bridge_v2_model_panel_candidate.json",
+    "evaluated_models": [
+      "openai/gpt-5.6-terra",
+      "openai/gpt-5.6-luna"
+    ],
+    "judges": [
+      "openai/gpt-5.6-luna",
+      "openai/gpt-5.6-sol"
+    ],
+    "transport": {
+      "base_url": "https://openrouter.ai/api/v1",
+      "provider_policy": {
+        "only": [
+          "openai"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true,
+        "data_collection": "deny"
+      },
+      "transport_note": "OpenRouter transport pinned to OpenAI-hosted endpoints; no alternate provider fallback is allowed."
+    },
+    "model_ids_frozen": true,
+    "funding_ready": false
+  }
+}
