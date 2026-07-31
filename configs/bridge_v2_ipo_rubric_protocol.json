@@ -1,7 +1,7 @@
 {
   "protocol_id": "evisuff-bridge-v2-ipo-rubric-protocol",
   "created_at": "2026-07-31",
-  "status": "public_answer_ensemble_frozen_judges_and_final_rubrics_pending",
+  "status": "public_answer_ensemble_and_rubric_judge_frozen_final_rubrics_pending",
   "source": {
     "repository": "benstaf/ipoagent",
     "commit_sha": "091f06913e39738ef464ac3548ad4b533ac47c50",
@@ -95,7 +95,7 @@
   "gate_status": {
     "protocol_resolved": true,
     "rubric_construction_ensemble_frozen": true,
-    "rubric_judges_frozen": false,
+    "rubric_judges_frozen": true,
     "machine_rubrics_generated": false,
     "human_expert_review_completed": false,
     "final_rubrics_frozen": false
@@ -103,5 +103,24 @@
   "reporting_label": "reproduced IPO Finance Agent public subset; not an official leaderboard reproduction unless author-approved rubrics and equivalent tool access are used",
   "model_calls_completed_under_this_protocol": 0,
   "public_answer_ensemble_reused": true,
-  "new_answer_generation_calls_required": 0
+  "new_answer_generation_calls_required": 0,
+  "rubric_judge": {
+    "provider": "openrouter",
+    "model_id": "openai/gpt-5.6-luna",
+    "reasoning_effort": "medium",
+    "temperature": 0.0,
+    "transport": {
+      "base_url": "https://openrouter.ai/api/v1",
+      "provider_policy": {
+        "only": [
+          "openai"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true,
+        "data_collection": "deny"
+      },
+      "transport_note": "OpenRouter transport pinned to OpenAI-hosted endpoints; no alternate provider fallback is allowed."
+    },
+    "frozen_before_generation": true
+  }
 }

@@ -1,7 +1,7 @@
 {
   "plan_id": "evisuff-bridge-v2-model-panel-candidate",
   "created_at": "2026-07-31",
-  "status": "preflight_complete_access_missing_or_unverified",
+  "status": "exact_openrouter_routes_frozen_funding_required",
   "selection_rationale": "Use exact API models with public Big Finance Bench results for the headline comparison, while retaining the existing open-weight OpenRouter model only as an exploratory engineering control.",
   "official_openai_reference": {
     "model_guide_retrieved": "2026-07-31",
@@ -19,8 +19,8 @@
   "evaluated_models": [
     {
       "role": "frontier_anchor",
-      "provider": "openai",
-      "model_id": "gpt-5.6-terra",
+      "provider": "openrouter",
+      "model_id": "openai/gpt-5.6-terra",
       "endpoint": "v1/chat/completions",
       "reasoning_effort": "medium",
       "temperature": 0.0,
@@ -30,12 +30,26 @@
         "cached_input": 0.25,
         "output": 15.0
       },
-      "freeze_if_accessible_in_preflight": true
+      "freeze_if_accessible_in_preflight": true,
+      "transport": {
+        "base_url": "https://openrouter.ai/api/v1",
+        "provider_policy": {
+          "only": [
+            "openai"
+          ],
+          "allow_fallbacks": false,
+          "require_parameters": true,
+          "data_collection": "deny"
+        },
+        "transport_note": "OpenRouter transport pinned to OpenAI-hosted endpoints; no alternate provider fallback is allowed."
+      },
+      "access_verified": true,
+      "frozen": true
     },
     {
       "role": "cost_control",
-      "provider": "openai",
-      "model_id": "gpt-5.6-luna",
+      "provider": "openrouter",
+      "model_id": "openai/gpt-5.6-luna",
       "endpoint": "v1/chat/completions",
       "reasoning_effort": "medium",
       "temperature": 0.0,
@@ -45,7 +59,21 @@
         "cached_input": 0.1,
         "output": 6.0
       },
-      "freeze_if_accessible_in_preflight": true
+      "freeze_if_accessible_in_preflight": true,
+      "transport": {
+        "base_url": "https://openrouter.ai/api/v1",
+        "provider_policy": {
+          "only": [
+            "openai"
+          ],
+          "allow_fallbacks": false,
+          "require_parameters": true,
+          "data_collection": "deny"
+        },
+        "transport_note": "OpenRouter transport pinned to OpenAI-hosted endpoints; no alternate provider fallback is allowed."
+      },
+      "access_verified": true,
+      "frozen": true
     }
   ],
   "exploratory_controls": [
@@ -60,20 +88,46 @@
   ],
   "judge_candidates": {
     "rubric_induction_and_audit": {
-      "provider": "openai",
-      "model_id": "gpt-5.6-luna",
+      "provider": "openrouter",
+      "model_id": "openai/gpt-5.6-luna",
       "reasoning_effort": "medium",
       "temperature": 0.0,
-      "status": "not_accessible_or_unverified",
-      "access_verified": false
+      "status": "frozen_before_rubric_generation_and_evaluation",
+      "access_verified": true,
+      "transport": {
+        "base_url": "https://openrouter.ai/api/v1",
+        "provider_policy": {
+          "only": [
+            "openai"
+          ],
+          "allow_fallbacks": false,
+          "require_parameters": true,
+          "data_collection": "deny"
+        },
+        "transport_note": "OpenRouter transport pinned to OpenAI-hosted endpoints; no alternate provider fallback is allowed."
+      },
+      "frozen": true
     },
     "final_evaluation": {
-      "provider": "openai",
-      "model_id": "gpt-5.6-sol",
+      "provider": "openrouter",
+      "model_id": "openai/gpt-5.6-sol",
       "reasoning_effort": "high",
       "temperature": 0.0,
-      "status": "not_accessible_or_unverified",
-      "access_verified": false
+      "status": "frozen_before_rubric_generation_and_evaluation",
+      "access_verified": true,
+      "transport": {
+        "base_url": "https://openrouter.ai/api/v1",
+        "provider_policy": {
+          "only": [
+            "openai"
+          ],
+          "allow_fallbacks": false,
+          "require_parameters": true,
+          "data_collection": "deny"
+        },
+        "transport_note": "OpenRouter transport pinned to OpenAI-hosted endpoints; no alternate provider fallback is allowed."
+      },
+      "frozen": true
     }
   },
   "evaluated_model_budget": {
@@ -98,7 +152,7 @@
     "do not send POST inference requests",
     "commit only a secret-free access summary"
   ],
-  "model_ids_frozen": false,
+  "model_ids_frozen": true,
   "inference_allowed": false,
   "access_preflight": {
     "preflight_id": "evisuff-bridge-v2-model-access",
@@ -150,5 +204,31 @@
       "inference_allowed": false
     }
   },
-  "openrouter_control_frozen": "openai/gpt-oss-20b"
+  "openrouter_control_frozen": "openai/gpt-oss-20b",
+  "transport_lock": {
+    "base_url": "https://openrouter.ai/api/v1",
+    "provider_policy": {
+      "only": [
+        "openai"
+      ],
+      "allow_fallbacks": false,
+      "require_parameters": true,
+      "data_collection": "deny"
+    },
+    "transport_note": "OpenRouter transport pinned to OpenAI-hosted endpoints; no alternate provider fallback is allowed."
+  },
+  "exact_model_ids": {
+    "frontier_anchor": "openai/gpt-5.6-terra",
+    "cost_control": "openai/gpt-5.6-luna",
+    "rubric_induction_and_audit": "openai/gpt-5.6-luna",
+    "final_evaluation": "openai/gpt-5.6-sol",
+    "open_weight_engineering_control": "openai/gpt-oss-20b"
+  },
+  "judge_ids_frozen": true,
+  "funding_ready": false,
+  "funding_gate": {
+    "current_key_is_free_tier": true,
+    "paid_model_calls_authorized": false,
+    "required_action": "Add OpenRouter credits or configure OPENAI_API_KEY before rubric generation or evaluated-model inference."
+  }
 }

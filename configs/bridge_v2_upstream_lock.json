@@ -1,7 +1,7 @@
 {
   "lock_id": "evisuff-benchmark-bridge-v2-upstream-lock",
   "created_at": "2026-07-30",
-  "status": "public_items_and_ipo_answer_ensemble_frozen",
+  "status": "exact_model_and_judge_routes_frozen_funding_and_final_rubrics_pending",
   "sources": {
     "finar_bench": {
       "repository": "SAIFS-AIHub/FinAR-Bench",
@@ -57,7 +57,7 @@
       "questions_materialized": true,
       "static_public_rubrics_materialized": false,
       "rubric_protocol": "configs/bridge_v2_ipo_rubric_protocol.json",
-      "rubric_protocol_sha256": "3d76320356f1a9126f89254e7c7bfec87aa3841c9a4d5e495207f1ffa4fabaa8",
+      "rubric_protocol_sha256": "3e3b79ada2de307e35482968a09ace87cc08cef4b20309708473c58a265c206a",
       "rubric_protocol_resolved": true,
       "final_rubrics_materialized": false,
       "reporting_label": "reproduced IPO Finance Agent public subset",
@@ -95,12 +95,35 @@
   "inference_allowed": false,
   "unlock_rule": "All final rubrics, exact evaluated models, rubric-construction models, judges, tool surfaces, and budgets must be frozen in a new registration commit before any bridge inference.",
   "remaining_non_source_gates": [
-    "freeze IPO rubric judge IDs",
+    "fund OpenRouter paid-model budget or configure direct OpenAI key",
     "generate, review, and freeze final IPO rubrics",
-    "freeze evaluated model IDs",
-    "freeze evaluation judge models",
     "freeze tool surfaces",
     "approve evaluated, rubric-construction, and judge call budgets",
     "create a new V2 registration branch"
-  ]
+  ],
+  "model_panel": {
+    "path": "configs/bridge_v2_model_panel_candidate.json",
+    "evaluated_models": [
+      "openai/gpt-5.6-terra",
+      "openai/gpt-5.6-luna"
+    ],
+    "judges": [
+      "openai/gpt-5.6-luna",
+      "openai/gpt-5.6-sol"
+    ],
+    "transport": {
+      "base_url": "https://openrouter.ai/api/v1",
+      "provider_policy": {
+        "only": [
+          "openai"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true,
+        "data_collection": "deny"
+      },
+      "transport_note": "OpenRouter transport pinned to OpenAI-hosted endpoints; no alternate provider fallback is allowed."
+    },
+    "model_ids_frozen": true,
+    "funding_ready": false
+  }
 }

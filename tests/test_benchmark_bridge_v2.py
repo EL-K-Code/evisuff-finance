@@ -158,13 +158,13 @@ class BenchmarkBridgeV2Tests(unittest.TestCase):
         for name in ("finar_bench", "ipo_finance_agent", "big_finance_bench"):
             self.assertEqual(len(sources[name]["commit_sha"]), 40)
             self.assertTrue(sources[name]["lock_complete"])
-        self.assertEqual(self.lock["status"], "all_public_items_materialized_ipo_rubric_protocol_frozen")
+        self.assertEqual(self.lock["status"], "exact_model_and_judge_routes_frozen_funding_and_final_rubrics_pending")
         self.assertFalse(self.lock["inference_allowed"])
 
     def test_models_judges_rubrics_and_budget_must_be_frozen(self) -> None:
         policy = self.design["model_panel_policy"]
         self.assertGreaterEqual(policy["minimum_models"], 2)
-        self.assertFalse(policy["exact_model_ids_frozen"])
+        self.assertTrue(policy["exact_model_ids_frozen"])
         self.assertTrue(self.design["judge_call_policy"]["count_separately_from_evaluated_model_calls"])
         required = set(self.design["required_pre_inference_gates"])
         self.assertTrue(
@@ -181,14 +181,42 @@ class BenchmarkBridgeV2Tests(unittest.TestCase):
         for gate in (
             "freeze_ipo_rubric_construction_ensemble",
             "freeze_ipo_rubric_judges",
-            "generate_review_and_freeze_ipo_rubrics",
             "freeze_evaluated_model_ids",
             "freeze_judge_models",
+        ):
+            self.assertTrue(self.design["gate_status"][gate])
+        for gate in (
+            "generate_review_and_freeze_ipo_rubrics",
             "freeze_tool_surfaces",
             "approve_evaluated_and_judge_call_budget",
             "create_new_registration_branch",
         ):
             self.assertFalse(self.design["gate_status"][gate])
+
+    def test_exact_model_routes_and_public_ipo_ensemble_are_frozen(self) -> None:
+        policy = self.design["model_panel_policy"]
+        self.assertEqual(
+            policy["selected_evaluated_models"],
+            ["openai/gpt-5.6-terra", "openai/gpt-5.6-luna"],
+        )
+        self.assertEqual(
+            policy["selected_judges"]["final_evaluation"],
+            "openai/gpt-5.6-sol",
+        )
+        self.assertEqual(
+            policy["transport"]["provider_policy"]["only"], ["openai"]
+        )
+        self.assertFalse(
+            policy["transport"]["provider_policy"]["allow_fallbacks"]
+        )
+        self.assertFalse(policy["funding_ready"])
+        self.assertTrue(
+            self.design["gate_status"]["freeze_ipo_rubric_construction_ensemble"]
+        )
+        self.assertTrue(
+            self.design["gate_status"]["freeze_ipo_rubric_judges"]
+        )
+        self.assertFalse(self.lock["inference_allowed"])
 
     def test_cross_benchmark_metrics_are_explicit(self) -> None:
         self.assertEqual(
