@@ -1,7 +1,7 @@
 {
   "protocol_id": "evisuff-bridge-v2-ipo-rubric-protocol",
   "created_at": "2026-07-31",
-  "status": "protocol_frozen_before_rubric_generation_and_evaluated_model_inference",
+  "status": "public_answer_ensemble_frozen_judges_and_final_rubrics_pending",
   "source": {
     "repository": "benstaf/ipoagent",
     "commit_sha": "091f06913e39738ef464ac3548ad4b533ac47c50",
@@ -9,7 +9,9 @@
     "orchestrator_path": "finance_agent/generaterubrics.py",
     "orchestrator_blob_sha": "6b38c22249e9aed3d5df17f89610662d09e4961e",
     "induction_path": "finance_agent/stage3_inducerubrics.py",
-    "induction_blob_sha": "65d29793b94da122bae5a96243b293811836aa09"
+    "induction_blob_sha": "65d29793b94da122bae5a96243b293811836aa09",
+    "public_answer_ensemble": "configs/bridge_v2_ipo_rubric_ensemble.json",
+    "public_answer_ensemble_sha256": "1b882e80e81079635e2fd56777d3be274471ec77ed2c8c5f011819e2c346f365"
   },
   "public_artifact_finding": {
     "questions_publicly_materialized": true,
@@ -92,12 +94,14 @@
   },
   "gate_status": {
     "protocol_resolved": true,
-    "rubric_construction_ensemble_frozen": false,
+    "rubric_construction_ensemble_frozen": true,
     "rubric_judges_frozen": false,
     "machine_rubrics_generated": false,
     "human_expert_review_completed": false,
     "final_rubrics_frozen": false
   },
   "reporting_label": "reproduced IPO Finance Agent public subset; not an official leaderboard reproduction unless author-approved rubrics and equivalent tool access are used",
-  "model_calls_completed_under_this_protocol": 0
+  "model_calls_completed_under_this_protocol": 0,
+  "public_answer_ensemble_reused": true,
+  "new_answer_generation_calls_required": 0
 }

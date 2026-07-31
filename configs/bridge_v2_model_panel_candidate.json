@@ -1,7 +1,7 @@
 {
   "plan_id": "evisuff-bridge-v2-model-panel-candidate",
   "created_at": "2026-07-31",
-  "status": "preflight_pending_no_inference",
+  "status": "preflight_complete_access_missing_or_unverified",
   "selection_rationale": "Use exact API models with public Big Finance Bench results for the headline comparison, while retaining the existing open-weight OpenRouter model only as an exploratory engineering control.",
   "official_openai_reference": {
     "model_guide_retrieved": "2026-07-31",
@@ -64,14 +64,16 @@
       "model_id": "gpt-5.6-luna",
       "reasoning_effort": "medium",
       "temperature": 0.0,
-      "status": "candidate_pending_access_and_bias_review"
+      "status": "not_accessible_or_unverified",
+      "access_verified": false
     },
     "final_evaluation": {
       "provider": "openai",
       "model_id": "gpt-5.6-sol",
       "reasoning_effort": "high",
       "temperature": 0.0,
-      "status": "candidate_pending_access_and_cross_vendor_bias_review"
+      "status": "not_accessible_or_unverified",
+      "access_verified": false
     }
   },
   "evaluated_model_budget": {
@@ -97,5 +99,56 @@
     "commit only a secret-free access summary"
   ],
   "model_ids_frozen": false,
-  "inference_allowed": false
+  "inference_allowed": false,
+  "access_preflight": {
+    "preflight_id": "evisuff-bridge-v2-model-access",
+    "timestamp_utc": "2026-07-31T10:37:41.397166+00:00",
+    "request_policy": "GET-only; no inference endpoint called",
+    "model_generation_calls": 0,
+    "openai": {
+      "secret_present": false,
+      "models_endpoint_checked": false,
+      "target_access": {
+        "gpt-5.6-sol": false,
+        "gpt-5.6-terra": false,
+        "gpt-5.6-luna": false
+      },
+      "error": null
+    },
+    "openrouter": {
+      "secret_present": true,
+      "models_endpoint_checked": true,
+      "key_endpoint_checked": true,
+      "target_access": {
+        "openai/gpt-oss-20b": true,
+        "openai/gpt-oss-20b:free": true,
+        "openai/gpt-5.6-sol": true,
+        "openai/gpt-5.6-terra": true,
+        "openai/gpt-5.6-luna": true
+      },
+      "key_metadata": {
+        "limit": null,
+        "limit_remaining": null,
+        "usage": 0,
+        "usage_daily": 0,
+        "usage_weekly": 0,
+        "usage_monthly": 0,
+        "is_free_tier": true,
+        "rate_limit": {
+          "requests": -1,
+          "interval": "10s",
+          "note": "This field is deprecated and safe to ignore."
+        }
+      },
+      "error": null
+    },
+    "decision": {
+      "evaluated_openai_models_accessible": false,
+      "candidate_sol_judge_accessible": false,
+      "openrouter_control_selected": "openai/gpt-oss-20b",
+      "model_ids_can_be_frozen": false,
+      "inference_allowed": false
+    }
+  },
+  "openrouter_control_frozen": "openai/gpt-oss-20b"
 }
