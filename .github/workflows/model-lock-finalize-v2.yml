@@ -1,0 +1,196 @@
+name: Finalize V2 model lock
+
+on:
+  pull_request:
+    branches: [main]
+    types: [reopened]
+
+jobs:
+  finalize:
+    if: contains(github.event.pull_request.title, '[FINALIZE MODEL LOCK V2]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Freeze exact OpenRouter model and judge routes
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('.')
+          plan_path = root / 'configs' / 'bridge_v2_model_panel_candidate.json'
+          protocol_path = root / 'configs' / 'bridge_v2_ipo_rubric_protocol.json'
+          design_path = root / 'configs' / 'benchmark_bridge_v2.json'
+          lock_path = root / 'configs' / 'bridge_v2_upstream_lock.json'
+          test_path = root / 'tests' / 'test_benchmark_bridge_v2.py'
+
+          plan = json.loads(plan_path.read_text(encoding='utf-8'))
+          protocol = json.loads(protocol_path.read_text(encoding='utf-8'))
+          design = json.loads(design_path.read_text(encoding='utf-8'))
+          lock = json.loads(lock_path.read_text(encoding='utf-8'))
+
+          route = {
+              'base_url': 'https://openrouter.ai/api/v1',
+              'provider_policy': {
+                  'only': ['openai'],
+                  'allow_fallbacks': False,
+                  'require_parameters': True,
+                  'data_collection': 'deny',
+              },
+              'transport_note': 'OpenRouter transport pinned to OpenAI-hosted endpoints; no alternate provider fallback is allowed.'
+          }
+
+          exact_models = {
+              'frontier_anchor': 'openai/gpt-5.6-terra',
+              'cost_control': 'openai/gpt-5.6-luna',
+              'rubric_induction_and_audit': 'openai/gpt-5.6-luna',
+              'final_evaluation': 'openai/gpt-5.6-sol',
+              'open_weight_engineering_control': 'openai/gpt-oss-20b',
+          }
+
+          for model in plan['evaluated_models']:
+              role = model['role']
+              model['provider'] = 'openrouter'
+              model['model_id'] = exact_models[role]
+              model['transport'] = route
+              model['access_verified'] = True
+              model['frozen'] = True
+
+          for role, judge in plan['judge_candidates'].items():
+              judge['provider'] = 'openrouter'
+              judge['model_id'] = exact_models[role]
+              judge['transport'] = route
+              judge['access_verified'] = True
+              judge['status'] = 'frozen_before_rubric_generation_and_evaluation'
+              judge['frozen'] = True
+
+          plan['status'] = 'exact_openrouter_routes_frozen_funding_required'
+          plan['transport_lock'] = route
+          plan['exact_model_ids'] = exact_models
+          plan['model_ids_frozen'] = True
+          plan['judge_ids_frozen'] = True
+          plan['funding_ready'] = False
+          plan['funding_gate'] = {
+              'current_key_is_free_tier': True,
+              'paid_model_calls_authorized': False,
+              'required_action': 'Add OpenRouter credits or configure OPENAI_API_KEY before rubric generation or evaluated-model inference.'
+          }
+          plan['inference_allowed'] = False
+
+          protocol['rubric_judge'] = {
+              'provider': 'openrouter',
+              'model_id': exact_models['rubric_induction_and_audit'],
+              'reasoning_effort': 'medium',
+              'temperature': 0.0,
+              'transport': route,
+              'frozen_before_generation': True,
+          }
+          protocol['gate_status']['rubric_construction_ensemble_frozen'] = True
+          protocol['gate_status']['rubric_judges_frozen'] = True
+          protocol['status'] = 'public_answer_ensemble_and_rubric_judge_frozen_final_rubrics_pending'
+
+          design['status'] = 'public_objects_and_exact_model_routes_frozen_funding_and_ipo_rubrics_pending'
+          policy = design['model_panel_policy']
+          policy['exact_model_ids_frozen'] = True
+          policy['selected_evaluated_models'] = [
+              exact_models['frontier_anchor'],
+              exact_models['cost_control'],
+          ]
+          policy['selected_judges'] = {
+              'ipo_rubric': exact_models['rubric_induction_and_audit'],
+              'final_evaluation': exact_models['final_evaluation'],
+          }
+          policy['transport'] = route
+          policy['funding_ready'] = False
+          gates = design['gate_status']
+          gates['freeze_ipo_rubric_construction_ensemble'] = True
+          gates['freeze_ipo_rubric_judges'] = True
+          gates['freeze_evaluated_model_ids'] = True
+          gates['freeze_judge_models'] = True
+          gates['approve_evaluated_and_judge_call_budget'] = False
+          gates['create_new_registration_branch'] = False
+
+          lock['status'] = 'exact_model_and_judge_routes_frozen_funding_and_final_rubrics_pending'
+          lock['model_panel'] = {
+              'path': 'configs/bridge_v2_model_panel_candidate.json',
+              'evaluated_models': [
+                  exact_models['frontier_anchor'],
+                  exact_models['cost_control'],
+              ],
+              'judges': [
+                  exact_models['rubric_induction_and_audit'],
+                  exact_models['final_evaluation'],
+              ],
+              'transport': route,
+              'model_ids_frozen': True,
+              'funding_ready': False,
+          }
+          remove = {
+              'freeze IPO rubric-construction ensemble IDs',
+              'freeze IPO rubric judge IDs',
+              'freeze evaluated model IDs',
+              'freeze evaluation judge models',
+          }
+          lock['remaining_non_source_gates'] = [
+              gate for gate in lock['remaining_non_source_gates'] if gate not in remove
+          ]
+          if 'fund OpenRouter paid-model budget or configure direct OpenAI key' not in lock['remaining_non_source_gates']:
+              lock['remaining_non_source_gates'].insert(
+                  0, 'fund OpenRouter paid-model budget or configure direct OpenAI key'
+              )
+          lock['inference_allowed'] = False
+
+          text = test_path.read_text(encoding='utf-8')
+          text = text.replace(
+              'self.assertFalse(policy["exact_model_ids_frozen"])',
+              'self.assertTrue(policy["exact_model_ids_frozen"])'
+          )
+          text = text.replace(
+              'self.assertFalse(self.design["gate_status"]["freeze_evaluated_model_ids"])',
+              'self.assertTrue(self.design["gate_status"]["freeze_evaluated_model_ids"])'
+          )
+          text = text.replace(
+              'self.assertFalse(self.design["gate_status"]["freeze_judge_models"])',
+              'self.assertTrue(self.design["gate_status"]["freeze_judge_models"])'
+          )
+          marker = '    def test_cross_benchmark_metrics_are_explicit(self) -> None:\n'
+          addition = '''    def test_exact_model_routes_and_public_ipo_ensemble_are_frozen(self) -> None:\n        policy = self.design["model_panel_policy"]\n        self.assertEqual(\n            policy["selected_evaluated_models"],\n            ["openai/gpt-5.6-terra", "openai/gpt-5.6-luna"],\n        )\n        self.assertEqual(\n            policy["selected_judges"]["final_evaluation"],\n            "openai/gpt-5.6-sol",\n        )\n        self.assertEqual(policy["transport"]["provider_policy"]["only"], ["openai"])\n        self.assertFalse(policy["transport"]["provider_policy"]["allow_fallbacks"])\n        self.assertFalse(policy["funding_ready"])\n        self.assertTrue(\n            self.design["gate_status"]["freeze_ipo_rubric_construction_ensemble"]\n        )\n        self.assertTrue(self.design["gate_status"]["freeze_ipo_rubric_judges"])\n        self.assertFalse(self.lock["inference_allowed"])\n\n'''
+          if 'test_exact_model_routes_and_public_ipo_ensemble_are_frozen' not in text:
+              text = text.replace(marker, addition + marker)
+
+          plan_path.write_text(json.dumps(plan, indent=2) + '\n', encoding='utf-8')
+          protocol_path.write_text(json.dumps(protocol, indent=2) + '\n', encoding='utf-8')
+          design_path.write_text(json.dumps(design, indent=2) + '\n', encoding='utf-8')
+          lock_path.write_text(json.dumps(lock, indent=2) + '\n', encoding='utf-8')
+          test_path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Run V2 contract tests
+        run: PYTHONPATH=src python -m unittest tests.test_benchmark_bridge_v2 -v
+
+      - name: Commit model lock
+        shell: bash
+        env:
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            configs/bridge_v2_model_panel_candidate.json \
+            configs/bridge_v2_ipo_rubric_protocol.json \
+            configs/benchmark_bridge_v2.json \
+            configs/bridge_v2_upstream_lock.json \
+            tests/test_benchmark_bridge_v2.py
+          git commit -m 'Freeze V2 model and judge routes before inference'
+          git push origin HEAD:"${PR_BRANCH}"
