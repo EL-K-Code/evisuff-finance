@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import unittest
 from pathlib import Path
@@ -8,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DESIGN_PATH = ROOT / "configs" / "benchmark_bridge_v2.json"
 LOCK_PATH = ROOT / "configs" / "bridge_v2_upstream_lock.json"
+FINAR_MANIFEST_PATH = ROOT / "configs" / "bridge_v2_finar_items.json"
 SUPERSESSION_PATH = ROOT / "docs" / "preregistered_v1_supersession.md"
 
 
@@ -16,6 +18,12 @@ class BenchmarkBridgeV2Tests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.design = json.loads(DESIGN_PATH.read_text(encoding="utf-8"))
         cls.lock = json.loads(LOCK_PATH.read_text(encoding="utf-8"))
+        cls.finar_manifest = json.loads(
+            FINAR_MANIFEST_PATH.read_text(encoding="utf-8")
+        )
+        cls.finar_manifest_sha256 = hashlib.sha256(
+            FINAR_MANIFEST_PATH.read_bytes()
+        ).hexdigest()
         cls.supersession = SUPERSESSION_PATH.read_text(encoding="utf-8")
 
     def test_v1_is_superseded_before_official_inference(self) -> None:
@@ -86,14 +94,57 @@ class BenchmarkBridgeV2Tests(unittest.TestCase):
             ],
         )
 
+    def test_finar_source_and_exact_items_are_materialized(self) -> None:
+        source_lock = self.lock["sources"]["finar_bench"]
+        source = self.finar_manifest["source"]
+        selection = self.finar_manifest["selection"]
+        items = self.finar_manifest["items"]
+
+        self.assertTrue(source_lock["lock_complete"])
+        self.assertIsNone(source_lock["remaining_action"])
+        self.assertEqual(len(source_lock["dataset_revision"]), 40)
+        self.assertEqual(len(source_lock["test_file_sha256"]), 64)
+        self.assertEqual(len(source_lock["test_file_etag"]), 40)
+        self.assertEqual(source_lock["test_file_size_bytes"], 2_386_147)
+        self.assertEqual(source["record_count"], 90)
+        self.assertEqual(
+            source["task_counts"],
+            {"fact": 540, "indicator": 540, "reasoning": 90},
+        )
+        self.assertEqual(
+            selection["counts"],
+            {"fact": 4, "indicator": 4, "reasoning": 4},
+        )
+        self.assertEqual(len(items), 12)
+        self.assertEqual(len({item["task_id"] for item in items}), 12)
+
+        selected_ids = [item["task_id"] for item in items]
+        self.assertEqual(selected_ids, source_lock["selected_task_ids"])
+        self.assertEqual(
+            selected_ids,
+            self.design["reference_surfaces"]["finar_bench"]["selected_task_ids"],
+        )
+        self.assertEqual(
+            source_lock["item_manifest_sha256"], self.finar_manifest_sha256
+        )
+        self.assertEqual(
+            self.design["reference_surfaces"]["finar_bench"][
+                "item_manifest_sha256"
+            ],
+            self.finar_manifest_sha256,
+        )
+        self.assertTrue(
+            self.design["gate_status"]["materialize_exact_finar_task_ids"]
+        )
+        self.assertFalse(self.lock["inference_allowed"])
+
     def test_upstream_revisions_are_pinned_and_launch_remains_locked(self) -> None:
         sources = self.lock["sources"]
         for name in ("finar_bench", "ipo_finance_agent", "big_finance_bench"):
             self.assertEqual(len(sources[name]["commit_sha"]), 40)
+            self.assertTrue(sources[name]["lock_complete"])
         self.assertEqual(len(sources["ipo_finance_agent"]["git_blob_sha"]), 40)
         self.assertEqual(len(sources["big_finance_bench"]["git_blob_sha"]), 40)
-        self.assertFalse(sources["finar_bench"]["lock_complete"])
-        self.assertIsNone(sources["finar_bench"]["test_file_hash"])
         self.assertFalse(self.lock["inference_allowed"])
 
     def test_models_judges_and_budget_must_be_frozen_before_inference(self) -> None:
@@ -115,6 +166,8 @@ class BenchmarkBridgeV2Tests(unittest.TestCase):
                 "create_new_registration_branch",
             }.issubset(gates)
         )
+        self.assertFalse(self.design["gate_status"]["freeze_evaluated_model_ids"])
+        self.assertFalse(self.design["gate_status"]["freeze_judge_models"])
 
     def test_cross_benchmark_metrics_are_explicit(self) -> None:
         metrics = self.design["cross_benchmark_metrics"]
