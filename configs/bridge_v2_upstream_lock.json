@@ -7,9 +7,6 @@
       "repository": "SAIFS-AIHub/FinAR-Bench",
       "commit_sha": "bd8efe8b265610d409cbcb1a6c09964870b90bc7",
       "dataset_repository": "SAIFS-AiHub/FinAR-Bench",
-      "test_file_hash": null,
-      "lock_complete": true,
-      "remaining_action": null,
       "dataset_revision": "a75026d0f2302432b7e52463865090f753d02bf6",
       "test_file_sha256": "94b8143ee3daf7643c654b2497a56b968edd9e7176fa33d2b37d74a39f14d5a9",
       "test_file_size_bytes": 2386147,
@@ -29,7 +26,9 @@
         "bc3842dc4e9f4a57a197cc750998b624",
         "2bd9d13875384d0f954746c50cda703b",
         "98f2bfd97545469fbec3e8ef686e12d7"
-      ]
+      ],
+      "lock_complete": true,
+      "remaining_action": null
     },
     "ipo_finance_agent": {
       "repository": "benstaf/ipoagent",
@@ -47,7 +46,7 @@
     }
   },
   "inference_allowed": false,
-  "unlock_rule": "All source locks, exact item manifests, evaluated models, judges, tool surfaces, and budgets must be frozen in a new registration commit before any bridge inference.",
+  "unlock_rule": "All exact item manifests, evaluated models, judges, tool surfaces, and budgets must be frozen in a new registration commit before any bridge inference.",
   "remaining_non_source_gates": [
     "materialize IPO Finance Agent questions and rubrics",
     "materialize BigFinanceBench items and rubrics",
