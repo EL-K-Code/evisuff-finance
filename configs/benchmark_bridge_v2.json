@@ -1,7 +1,7 @@
 {
   "design_id": "evisuff-benchmark-bridge-v2",
   "created_at": "2026-07-30",
-  "status": "all_public_items_materialized_ipo_rubric_protocol_pending",
+  "status": "all_public_items_materialized_ipo_rubric_protocol_frozen",
   "supersedes": "evisuff-stateful-ipo-v1",
   "supersession_reason": "Add direct same-model positioning against FinAR-Bench, IPO Finance Agent, and BigFinanceBench before confirmatory workflow experiments.",
   "official_v2_inference_started": false,
@@ -63,7 +63,7 @@
         35,
         46
       ],
-      "copy_policy": "Copy exact question text and official rubric from a pinned upstream revision. Do not paraphrase or replace after inference.",
+      "copy_policy": "Copy exact public question text from the pinned upstream revision. Because static final per-question rubrics are not published there, use the frozen author-inspired evaluator-optimizer replication protocol and complete human review before inference.",
       "item_manifest": "configs/bridge_v2_ipo_agent_items.json",
       "metrics": [
         "rubric_accuracy",
@@ -86,7 +86,11 @@
       ],
       "item_manifest_sha256": "f875a8a94f6f5e63f7bd324b91875da1c89fb381cbf94955011555320ea0ad23",
       "static_public_rubrics_materialized": false,
-      "rubric_protocol_status": "decision_required_before_inference"
+      "rubric_protocol": "configs/bridge_v2_ipo_rubric_protocol.json",
+      "rubric_protocol_sha256": "3d76320356f1a9126f89254e7c7bfec87aa3841c9a4d5e495207f1ffa4fabaa8",
+      "rubric_protocol_resolved": true,
+      "final_rubrics_materialized": false,
+      "reporting_label": "reproduced IPO Finance Agent public subset"
     },
     "big_finance_bench": {
       "upstream_repository": "https://github.com/Rogo-Technologies/big-finance-benchmark",
@@ -175,7 +179,11 @@
   "required_pre_inference_gates": [
     "pin_upstream_commits",
     "materialize_exact_finar_task_ids",
-    "copy_and_hash_exact_ipo_questions_and_rubrics",
+    "materialize_exact_ipo_questions",
+    "resolve_ipo_rubric_protocol",
+    "freeze_ipo_rubric_construction_ensemble",
+    "freeze_ipo_rubric_judges",
+    "generate_review_and_freeze_ipo_rubrics",
     "copy_and_hash_exact_big_finance_items_and_rubrics",
     "freeze_evaluated_model_ids",
     "freeze_judge_models",
@@ -183,18 +191,20 @@
     "approve_evaluated_and_judge_call_budget",
     "create_new_registration_branch"
   ],
-  "claim_boundary": "The bridge pilot validates direct benchmark positioning and harness interoperability. It is exploratory, uses one EviSuff IPO case, and is excluded from future confirmatory V2 estimates.",
+  "claim_boundary": "The bridge pilot validates direct benchmark positioning and harness interoperability. It is exploratory, uses one EviSuff IPO case, and is excluded from future confirmatory V2 estimates. The IPO Finance Agent surface is reported as a reproduced public subset unless author-approved rubrics and equivalent tool access are used.",
   "gate_status": {
     "pin_upstream_commits": true,
     "materialize_exact_finar_task_ids": true,
-    "copy_and_hash_exact_ipo_questions_and_rubrics": false,
+    "materialize_exact_ipo_questions": true,
+    "resolve_ipo_rubric_protocol": true,
+    "freeze_ipo_rubric_construction_ensemble": false,
+    "freeze_ipo_rubric_judges": false,
+    "generate_review_and_freeze_ipo_rubrics": false,
     "copy_and_hash_exact_big_finance_items_and_rubrics": true,
     "freeze_evaluated_model_ids": false,
     "freeze_judge_models": false,
     "freeze_tool_surfaces": false,
     "approve_evaluated_and_judge_call_budget": false,
-    "create_new_registration_branch": false,
-    "materialize_exact_ipo_questions": true,
-    "resolve_ipo_rubric_protocol": false
+    "create_new_registration_branch": false
   }
 }
